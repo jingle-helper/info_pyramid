@@ -69,7 +69,7 @@ class RateLimiterManager:
             self._limiters_by_loop[loop_id]['easytrader_default'] = AsyncLimiter(max(60, settings.EASYTRADER_DEFAULT_RATE_LIMIT), 60.0)
             self._limiters_by_loop[loop_id]['easytrader_login'] = AsyncLimiter(max(10, settings.EASYTRADER_LOGIN_RATE_LIMIT), 60.0)
             
-            logger.info(f"Rate limiting initialized with {len(self._limiters_by_loop[loop_id])} limiters")
+            logger.debug(f"Rate limiter pool created with {len(self._limiters_by_loop[loop_id])} limiters for loop {loop_id}")
         else:
             logger.info("Rate limiting disabled")
             
@@ -94,8 +94,15 @@ class RateLimiterManager:
         
         if limiter:
             try:
+                loop = asyncio.get_running_loop()
+                start = loop.time()
                 await limiter.acquire()
-                logger.debug(f"Rate limit acquired for {limiter_key}")
+                waited = (loop.time() - start)
+                # Only log when we actually throttled (waited > 20ms)
+                if waited > 0.02:
+                    logger.warning(f"Rate limited {limiter_key}: waited {waited*1000:.1f}ms")
+                else:
+                    logger.debug(f"Rate limit acquired for {limiter_key}")
             except Exception as e:
                 logger.warning(f"Failed to acquire rate limit for {limiter_key}: {e}")
         else:
