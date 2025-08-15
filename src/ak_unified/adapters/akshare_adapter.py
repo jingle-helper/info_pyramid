@@ -114,6 +114,14 @@ async def _call_single(ak_module, fn_name: str, params: Dict[str, Any]) -> pd.Da
 
 def ak_function_vendor(fn_name: str) -> str:
     name = fn_name.lower()
+    # Map common functions without suffix to their known vendor to avoid unknown warnings
+    known_map = {
+        'stock_zh_a_hist': 'eastmoney',
+        'stock_zh_a_hist_pre': 'eastmoney',
+        'stock_zh_index_daily': 'eastmoney',
+    }
+    if name in known_map:
+        return known_map[name]
     if name.endswith('_em') or 'eastmoney' in name:
         return 'eastmoney'
     if name.endswith('_sina') or 'sina' in name:
