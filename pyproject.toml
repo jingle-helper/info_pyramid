@@ -29,7 +29,6 @@ dependencies = [
     "mootdx>=1.0.0",
     "qstock>=0.0.0",
     "adata>=0.0.0",
-    "ibapi>=10.19.0",
     "pysnowball>=0.0.0",
     "easytrader>=0.0.0"
 ]
@@ -44,6 +43,9 @@ dev = [
     "isort>=5.12.0",
     "flake8>=6.0.0,<7.2.0",
     "mypy>=1.5.0"
+]
+ibkr = [
+    "ib-async>=0.1.0"
 ]
 
 [build-system]

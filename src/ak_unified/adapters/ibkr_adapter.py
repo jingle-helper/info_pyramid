@@ -13,10 +13,10 @@ class IBKRAdapterError(RuntimeError):
 
 def _import_ib() -> Any:
     try:
-        from ib_insync import IB, Stock  # type: ignore
+        from ib_async import IB, Stock  # type: ignore
         return IB, Stock
     except Exception as exc:
-        raise IBKRAdapterError("Failed to import ib_insync. Install with pip install ib-insync or uv sync --extra ibkr") from exc
+        raise IBKRAdapterError("Failed to import ib-async. Install with pip install ib-async or uv sync --extra ibkr") from exc
 
 
 def _ib_connect() -> Any:
@@ -215,6 +215,7 @@ def call_ibkr(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFram
         return ('ibkr.unsupported', pd.DataFrame([]))
     finally:
         try:
-            ib.disconnect()
+            if 'ib' in locals() and ib is not None:
+                ib.disconnect()
         except Exception:
             pass
