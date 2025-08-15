@@ -613,16 +613,26 @@ async def rpc_quote(
     symbols: Optional[List[str]] = Query(None),
     ak_function: Optional[str] = Query(None),
     allow_fallback: bool = Query(False),
-    adapter: Optional[str] = Query(None),
+    adapter: Optional[List[str]] = Query(None),
 ) -> Dict[str, Any]:
     """Get real-time quotes."""
-    if adapter == 'qmt':
+    if adapter and 'qmt' in adapter:
         try:
             from .adapters.qmt_adapter import fetch_realtime_quotes  # type: ignore
             tag, df = await fetch_realtime_quotes(symbols)
             return {"schema_version": "1.0.0", "provider": "qmt", "dataset": "securities.equity.cn.quote.qmt", "params": {"symbols": symbols}, "data": df.to_dict(orient='records'), "ak_function": tag, "data_source": "qmt"}
         except Exception as e:  # noqa: BLE001
             return {"schema_version": "1.0.0", "provider": "qmt", "error": str(e)}
+    # Try v2 dataset if available
+    dsid = "securities.equity.cn.quote"
+    if dsid in REGISTRY_V2:
+        params = {"symbols": symbols}
+        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        records = apply_and_validate(dsid, df.to_dict(orient='records'))
+        env = _envelope(_resolve_spec(dsid), params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return env.model_dump()
     env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return env.model_dump()
 

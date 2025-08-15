@@ -55,3 +55,15 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
+
+REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
+    dataset_id="securities.equity.cn.quote",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney"),
+        ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes"),
+        ProviderSpec(adapter="qstock", api_id="realtime"),
+        ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info"),
+    ],
+)
