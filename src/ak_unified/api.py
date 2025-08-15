@@ -272,7 +272,7 @@ async def rpc_ohlcv(
     end: Optional[str] = Query(None),
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
-    allow_fallback: bool = Query(False),
+    allow_fallback: bool = Query(True),
 ):
     # ohlcv uses the CN akshare dataset; for other adapters use /rpc/fetch with adapter
     env = await get_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
@@ -286,7 +286,7 @@ async def rpc_ohlcva(
     end: Optional[str] = Query(None),
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
-    allow_fallback: bool = Query(False),
+    allow_fallback: bool = Query(True),
 ):
     env = await get_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")

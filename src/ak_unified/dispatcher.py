@@ -260,7 +260,7 @@ async def get_ohlcv(
     adjust: str = "none",
     *,
     ak_function: Optional[str] = None,
-    allow_fallback: bool = False,
+    allow_fallback: bool = True,
 ) -> DataEnvelope:
     params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
     return await fetch_data("securities.equity.cn.ohlcv_daily", params, ak_function=ak_function, allow_fallback=allow_fallback)
@@ -312,7 +312,7 @@ async def get_ohlcva(
     adjust: str = "none",
     *,
     ak_function: Optional[str] = None,
-    allow_fallback: bool = False,
+    allow_fallback: bool = True,
 ) -> DataEnvelope:
     params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
     return await fetch_data("securities.equity.cn.ohlcva_daily", params, ak_function=ak_function, allow_fallback=allow_fallback)
