@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import importlib
+import os
+import json
+import inspect
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -19,9 +22,37 @@ def _import_akshare():
         raise AkAdapterError("Failed to import akshare. Ensure dependency is installed.") from exc
 
 
-def _rename_columns(df: pd.DataFrame, field_mapping: Optional[Dict[str, str]]) -> pd.DataFrame:
-    if field_mapping:
-        cols = {c: field_mapping.get(c, c) for c in df.columns}
+def _load_json_env(env_name: str) -> Any:
+    try:
+        raw = os.getenv(env_name)
+        if not raw:
+            return None
+        return json.loads(raw)
+    except Exception as exc:
+        logger.warning(f"Failed to parse env {env_name}: {exc}")
+        return None
+
+
+def _get_fn_aliases() -> Dict[str, List[str]]:
+    data = _load_json_env("AKU_AKSHARE_FN_ALIASES")
+    return data if isinstance(data, dict) else {}
+
+
+def _get_field_mapping_overrides() -> Dict[str, Dict[str, str]]:
+    data = _load_json_env("AKU_AKSHARE_FIELD_MAPPING")
+    return data if isinstance(data, dict) else {}
+
+
+def _rename_columns(df: pd.DataFrame, field_mapping: Optional[Dict[str, str]], fn_used: Optional[str] = None) -> pd.DataFrame:
+    overrides = _get_field_mapping_overrides()
+    fn_map = overrides.get(fn_used or "", {}) if isinstance(overrides, dict) else {}
+    combined: Dict[str, str] = {}
+    if isinstance(field_mapping, dict):
+        combined.update(field_mapping)
+    if isinstance(fn_map, dict):
+        combined.update(fn_map)
+    if combined:
+        cols = {c: combined.get(c, c) for c in df.columns}
         df = df.rename(columns=cols)
     return df
 
@@ -55,7 +86,20 @@ async def _call_single(ak_module, fn_name: str, params: Dict[str, Any]) -> pd.Da
     # Acquire rate limit before making call
     await acquire_rate_limit('akshare', vendor)
     
-    call_params = {k: v for k, v in params.items() if v is not None}
+    # Filter params by function signature to avoid breaking changes in akshare
+    call_params: Dict[str, Any] = {}
+    try:
+        sig = inspect.signature(fn)
+        allowed = set(sig.parameters.keys())
+        for k, v in params.items():
+            if v is None:
+                continue
+            if k in allowed:
+                call_params[k] = v
+    except Exception:
+        # Fallback to non-None filtering if signature is unavailable
+        call_params = {k: v for k, v in params.items() if v is not None}
+
     data = fn(**call_params) if call_params else fn()
     return data.copy() if isinstance(data, pd.DataFrame) else pd.DataFrame(data)
 
@@ -94,37 +138,58 @@ async def call_akshare(
     function_name: Optional[str] = None,
 ) -> Tuple[str, pd.DataFrame]:
     ak = _import_akshare()
+    aliases = _get_fn_aliases()
 
     if function_name:
-        df = await _call_single(ak, function_name, params)
-        df = _rename_columns(df, field_mapping)
-        df = _ensure_symbol_column(df, params)
-        df = _normalize_types(df)
-        return function_name, df
+        candidates: List[str] = [function_name] + list(aliases.get(function_name, []))
+        last_err: Optional[Exception] = None
+        for cand in candidates:
+            try:
+                df = await _call_single(ak, cand, params)
+                df = _rename_columns(df, field_mapping, fn_used=cand)
+                df = _ensure_symbol_column(df, params)
+                df = _normalize_types(df)
+                return cand, df
+            except Exception as e:
+                last_err = e
+                logger.warning(f"AkShare function {cand} failed: {e}")
+                continue
+        raise AkAdapterError(f"AkShare function(s) failed: {candidates}. Last error: {last_err}")
 
     if not allow_fallback:
         if len(ak_functions) == 1:
-            fn = ak_functions[0]
-            df = await _call_single(ak, fn, params)
-            df = _rename_columns(df, field_mapping)
-            df = _ensure_symbol_column(df, params)
-            df = _normalize_types(df)
-            return fn, df
+            base = ak_functions[0]
+            candidates: List[str] = [base] + list(aliases.get(base, []))
+            last_err: Optional[Exception] = None
+            for cand in candidates:
+                try:
+                    df = await _call_single(ak, cand, params)
+                    df = _rename_columns(df, field_mapping, fn_used=cand)
+                    df = _ensure_symbol_column(df, params)
+                    df = _normalize_types(df)
+                    return cand, df
+                except Exception as e:
+                    last_err = e
+                    logger.warning(f"AkShare function {cand} failed: {e}")
+                    continue
+            raise AkAdapterError(f"AkShare function(s) failed: {candidates}. Last error: {last_err}")
         else:
             raise AkAdapterError(f"Multiple functions specified but fallback not allowed: {ak_functions}")
 
-    # Try each function in order until one succeeds
-    for fn in ak_functions:
-        try:
-            df = await _call_single(ak, fn, params)
-            if not df.empty:
-                df = _rename_columns(df, field_mapping)
-                df = _ensure_symbol_column(df, params)
-                df = _normalize_types(df)
-                return fn, df
-        except Exception as e:
-            logger.warning(f"AkShare function {fn} failed: {e}")
-            continue
+    # Try each function and its aliases in order until one succeeds
+    for base in ak_functions:
+        candidates: List[str] = [base] + list(aliases.get(base, []))
+        for cand in candidates:
+            try:
+                df = await _call_single(ak, cand, params)
+                if not df.empty:
+                    df = _rename_columns(df, field_mapping, fn_used=cand)
+                    df = _ensure_symbol_column(df, params)
+                    df = _normalize_types(df)
+                    return cand, df
+            except Exception as e:
+                logger.warning(f"AkShare function {cand} failed: {e}")
+                continue
 
     # All functions failed
     raise AkAdapterError(f"All AkShare functions failed: {ak_functions}")
