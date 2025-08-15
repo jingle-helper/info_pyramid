@@ -14,7 +14,9 @@ from .dispatcher import (
     fetch_data, get_ohlcv, get_market_quote, get_ohlcva,
     fetch_data_batch, get_ohlcv_batch, get_market_quotes_batch, get_index_constituents_batch
 )
+from .dispatcher_v2 import fetch_data_v2  # type: ignore
 from .registry import REGISTRY
+from .registry_v2 import REGISTRY_V2  # type: ignore
 from .schemas.envelope import DataEnvelope, Pagination
 from .schemas.events import (
     EarningsEvent, EarningsForecast, EarningsCalendarRequest, EarningsForecastRequest,
@@ -287,7 +289,16 @@ async def rpc_ohlcva(
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
     allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
 ):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    dsid = "securities.equity.cn.ohlcva_daily"
+    if dsid in REGISTRY_V2:
+        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        env = _envelope(_resolve_spec(dsid), params, df.to_dict(orient="records"))
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     env = await get_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 

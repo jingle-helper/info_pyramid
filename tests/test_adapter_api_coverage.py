@@ -1,6 +1,7 @@
 import re
 import pathlib
 import pytest
+from ak_unified.registry_v2 import REGISTRY_V2
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "ak_unified"
@@ -108,3 +109,15 @@ def test_unified_adapter_api_coverage_enforced():
         problems.append("akshare in adapters: " + ", ".join(only_in_registry))
     if problems:
         pytest.fail("Adapter API coverage mismatch: " + " | ".join(problems))
+
+@pytest.mark.unit
+def test_registry_v2_apis_have_dispatch_patterns():
+    # For each provider in registry_v2, ensure we can detect adapter presence
+    for dsid, ds in REGISTRY_V2.items():
+        for p in ds.providers:
+            adapter = p.adapter.lower()
+            paths = ADAPTER_FILES.get(adapter)
+            assert paths is not None and len(paths) > 0, f"No adapter file for {adapter}"
+            txt = ''.join(path.read_text(encoding='utf-8', errors='ignore') for path in paths)
+            # Just assert the adapter file exists; deeper pattern per adapter is covered above
+            assert len(txt) > 0
