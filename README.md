@@ -39,7 +39,7 @@ EOF
   - `market.cn.aggregation.playback`（指数/板块时序回放）
   - `market.cn.industry_weight_distribution`（指数行业权重分布，自动近似权重）
   - `market.cn.volume_percentile`（量能分位）
-- Complementary adapters: baostock, mootdx (Windows偏好, optional extra `windows-mootdx`), qmt (Windows-only), efinance, qstock, adata, yfinance, Alpha Vantage, IBKR
+- Complementary adapters: baostock, mootdx (Windows偏好), qmt (Windows-only), efinance, qstock, adata, yfinance, Alpha Vantage, IBKR
 
 ## FastAPI
 Run:
@@ -116,7 +116,7 @@ SSE topics:
 - Index aggregation (polling): `/topic/index?index_codes=000300.SH&interval=2&window_n=10&topn=5&bucket_sec=60&history_buckets=30`
 
 ## Markets coverage
-- A 股（AkShare 为主，baostock/mootdx 等补充；mootdx 需 Windows，使用 `uv sync --extra windows-mootdx` 安装）：量价与多数基本面
+- A 股（AkShare 为主，baostock/mootdx 等补充）：量价与多数基本面
 - 港股：量价（AkShare 日线；分钟 yfinance/Alpha Vantage/IBKR）、基本面（AkShare/IBKR）
 - 美股：量价（yfinance/Alpha Vantage/IBKR）、基本面（Alpha Vantage 概览/三表/盈利；IBKR 多报告 XML）
 
