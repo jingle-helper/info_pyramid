@@ -281,7 +281,10 @@ async def rpc_ohlcv(
     dsid = "securities.equity.cn.ohlcv_daily"
     params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
     if dsid in REGISTRY_V2:
-        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
         records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
@@ -305,7 +308,10 @@ async def rpc_ohlcva(
     params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
     dsid = "securities.equity.cn.ohlcva_daily"
     if dsid in REGISTRY_V2:
-        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
         records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
@@ -629,7 +635,10 @@ async def rpc_quote(
     dsid = "securities.equity.cn.quote"
     if dsid in REGISTRY_V2:
         params = {"symbols": symbols}
-        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return {"error": str(e)}
         records = apply_and_validate(dsid, df.to_dict(orient='records'))
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
@@ -2385,7 +2394,10 @@ async def rpc_fetch_v2(
     except Exception:
         p = {}
     if dataset_id in REGISTRY_V2:
-        fn_used, df = fetch_data_v2(dataset_id, params=p, adapter=adapter, allow_fallback=allow_fallback)
+        try:
+            fn_used, df = fetch_data_v2(dataset_id, params=p, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
         records = apply_and_validate(dataset_id, df.to_dict(orient="records"))
         env = _api_make_envelope(dataset_id, p, records)
         env.ak_function = fn_used
