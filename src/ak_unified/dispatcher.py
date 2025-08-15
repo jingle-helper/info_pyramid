@@ -134,7 +134,7 @@ async def fetch_data(
             fn_used, df = await call_alphavantage(dataset_id, ak_params)
         elif spec.adapter == "ibkr":
             from .adapters.ibkr_adapter import call_ibkr
-            fn_used, df = await asyncio.to_thread(call_ibkr, dataset_id, ak_params)
+            fn_used, df = await call_ibkr(dataset_id, ak_params)
         else:
             raise RuntimeError(f"Unknown adapter: {spec.adapter}")
         logger.bind(dataset=dataset_id, adapter=spec.adapter, fn=fn_used).info("fetched upstream span")
