@@ -6,6 +6,8 @@ from typing import Callable, Dict, List, Optional
 ParamTransform = Callable[[Dict[str, any]], Dict[str, any]]
 PostProcess = Callable[["pd.DataFrame", Dict[str, any]], "pd.DataFrame"]
 
+from .registry import _ohlcv_stock_daily_params  # reuse v1 transform
+
 
 @dataclass
 class ProviderSpec:
@@ -35,8 +37,8 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
     category="securities",
     domain="securities.equity.cn",
     providers=[
-        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
-        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
         # Temporarily disable qstock due to py_mini_racer issues
         # ProviderSpec(adapter="qstock", api_id="history"),
@@ -49,8 +51,8 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
     category="securities",
     domain="securities.equity.cn",
     providers=[
-        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
-        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
         # Temporarily disable qstock
         # ProviderSpec(adapter="qstock", api_id="history"),
@@ -63,10 +65,10 @@ REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
     category="securities",
     domain="securities.equity.cn",
     providers=[
-        ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney"),
-        ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes"),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney", param_transform=lambda p: {}),
+        ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         # Temporarily disable qstock
         # ProviderSpec(adapter="qstock", api_id="realtime"),
-        ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info"),
+        ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info", param_transform=lambda p: {"symbol": (p.get("symbols") or [None])[0]}),
     ],
 )
