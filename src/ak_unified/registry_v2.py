@@ -38,7 +38,8 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
-        ProviderSpec(adapter="qstock", api_id="history"),
+        # Temporarily disable qstock due to py_mini_racer issues
+        # ProviderSpec(adapter="qstock", api_id="history"),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -51,7 +52,8 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
-        ProviderSpec(adapter="qstock", api_id="history"),
+        # Temporarily disable qstock
+        # ProviderSpec(adapter="qstock", api_id="history"),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -63,7 +65,8 @@ REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney"),
         ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes"),
-        ProviderSpec(adapter="qstock", api_id="realtime"),
+        # Temporarily disable qstock
+        # ProviderSpec(adapter="qstock", api_id="realtime"),
         ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info"),
     ],
 )

@@ -284,7 +284,7 @@ async def rpc_ohlcv(
         fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         records = df.to_dict(orient="records")
         records = apply_and_validate(dsid, records)
-        env = _envelope(_resolve_spec(dsid), params, records)
+        env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
@@ -306,7 +306,9 @@ async def rpc_ohlcva(
     dsid = "securities.equity.cn.ohlcva_daily"
     if dsid in REGISTRY_V2:
         fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
-        env = _envelope(_resolve_spec(dsid), params, df.to_dict(orient="records"))
+        records = df.to_dict(orient="records")
+        records = apply_and_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
@@ -629,7 +631,7 @@ async def rpc_quote(
         params = {"symbols": symbols}
         fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         records = apply_and_validate(dsid, df.to_dict(orient='records'))
-        env = _envelope(_resolve_spec(dsid), params, records)
+        env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return env.model_dump()
@@ -2385,8 +2387,29 @@ async def rpc_fetch_v2(
     if dataset_id in REGISTRY_V2:
         fn_used, df = fetch_data_v2(dataset_id, params=p, adapter=adapter, allow_fallback=allow_fallback)
         records = apply_and_validate(dataset_id, df.to_dict(orient="records"))
-        env = _envelope(_resolve_spec(dataset_id), p, records)
+        env = _api_make_envelope(dataset_id, p, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     return JSONResponse(content={"error": "dataset_id not in REGISTRY_V2"}, media_type="application/json", status_code=400)
+
+# Local helper to build envelope for v2 paths without relying on dispatcher internals
+
+def _api_make_envelope(dataset_id: str, params: Dict[str, Any], records: List[Dict[str, Any]]) -> DataEnvelope:
+    spec = REGISTRY.get(dataset_id)
+    if spec is not None:
+        category = spec.category
+        domain = spec.domain
+    else:
+        # Fallback parsing
+        parts = dataset_id.split('.')
+        category = parts[0] if parts else 'unknown'
+        domain = '.'.join(parts[:3]) if len(parts) >= 3 else 'unknown'
+    return DataEnvelope(
+        category=category,
+        domain=domain,
+        dataset=dataset_id,
+        params=params,
+        data=records,
+        pagination=Pagination(offset=0, limit=len(records), total=len(records)),
+    )
