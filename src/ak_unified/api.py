@@ -275,8 +275,19 @@ async def rpc_ohlcv(
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
     allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
 ):
     # ohlcv uses the CN akshare dataset; for other adapters use /rpc/fetch with adapter
+    dsid = "securities.equity.cn.ohlcv_daily"
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    if dsid in REGISTRY_V2:
+        fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        records = df.to_dict(orient="records")
+        records = apply_and_validate(dsid, records)
+        env = _envelope(_resolve_spec(dsid), params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     env = await get_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
@@ -2347,3 +2358,25 @@ async def get_easytrader_risk_metrics(
             risk_metrics=None,
             source="easytrader_adapter"
         )
+
+
+@app.get("/rpc/fetch_v2")
+async def rpc_fetch_v2(
+    dataset_id: str = Query(...),
+    adapter: Optional[List[str]] = Query(None),
+    allow_fallback: bool = Query(True),
+    params: Optional[str] = Query(None, description="JSON string of params"),
+):
+    import json
+    try:
+        p = json.loads(params) if params else {}
+    except Exception:
+        p = {}
+    if dataset_id in REGISTRY_V2:
+        fn_used, df = fetch_data_v2(dataset_id, params=p, adapter=adapter, allow_fallback=allow_fallback)
+        records = apply_and_validate(dataset_id, df.to_dict(orient="records"))
+        env = _envelope(_resolve_spec(dataset_id), p, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    return JSONResponse(content={"error": "dataset_id not in REGISTRY_V2"}, media_type="application/json", status_code=400)

@@ -28,3 +28,30 @@ class DatasetV2:
 
 
 REGISTRY_V2: Dict[str, DatasetV2] = {}
+
+# Pre-register core CN daily datasets with multiple providers (order governed by env)
+REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
+    dataset_id="securities.equity.cn.ohlcv_daily",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
+        ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
+        ProviderSpec(adapter="qstock", api_id="history"),
+        ProviderSpec(adapter="yfinance", api_id="download"),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
+    dataset_id="securities.equity.cn.ohlcva_daily",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney"),
+        ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney"),
+        ProviderSpec(adapter="efinance", api_id="stock.get_quote_history"),
+        ProviderSpec(adapter="qstock", api_id="history"),
+        ProviderSpec(adapter="yfinance", api_id="download"),
+    ],
+)
