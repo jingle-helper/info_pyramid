@@ -24,6 +24,10 @@ def _dispatch_call(provider: ProviderSpec, dataset_id: str, params: Dict[str, An
         # Reuse call_akshare with api_id as forced function
         from .adapters.akshare_adapter import call_akshare
         fn_used, df = _sync_await(call_akshare([api_id], p, field_mapping=provider.field_mapping, allow_fallback=False, function_name=api_id))
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            return fn_used, df
+        # if empty, try allow_fallback with same list to let akshare adapter apply aliases
+        fn_used, df = _sync_await(call_akshare([api_id], p, field_mapping=provider.field_mapping, allow_fallback=True))
         return fn_used, df
 
     if adapter == 'efinance':
