@@ -6,7 +6,7 @@ authors = [
     {name = "AK Unified Team", email = "team@ak-unified.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.8.1"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
