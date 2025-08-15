@@ -2,6 +2,11 @@
 
 Unified interface and schemas for AkShare across macro, market, and securities categories. Managed by `uv` (or pip).
 
+## Requirements
+- Python >= 3.10
+- IBKR features require running TWS/IB Gateway with API enabled; dependency provided via core extra `ibkr` (uses `ib-async`)
+- `mootdx` is included as a dependency (Windows 环境更佳)
+
 ## Setup
 ```bash
 uv venv
@@ -130,7 +135,7 @@ SSE topics:
   - 设置环境变量：`AKU_ALPHAVANTAGE_API_KEY` 或 `ALPHAVANTAGE_API_KEY`
   - US/HK: `securities.equity.{us|hk}.ohlcv_daily.av` / `.ohlcv_min.av` / `.quote.av`
   - 内置限速控制：免费版 5 请求/分钟，500 请求/天；Note/Error 情况将返回空结果
-- IBKR（可选安装 `uv sync --extra ibkr`；需运行 TWS/IB Gateway 并允许 API；依赖 `ib-async`）
+- IBKR（可选安装 `uv sync --extra ibkr`；需运行 TWS/IB Gateway 并允许 API；依赖 `ib-async`，适配器为异步实现）
   - 连接配置：`AKU_IB_HOST`（默认 127.0.0.1）、`AKU_IB_PORT`（默认 7497）、`AKU_IB_CLIENT_ID`（默认 1）
   - US/HK 行情：`securities.equity.{us|hk}.ohlcv_daily.ibkr` / `.ohlcv_min.ibkr` / `.quote.ibkr`
   - 基本面：`securities.equity.us.fundamentals.{overview|statements|ratios|snapshot}.ibkr`
