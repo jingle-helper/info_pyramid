@@ -14,7 +14,9 @@ from .dispatcher import (
     fetch_data, get_ohlcv, get_market_quote, get_ohlcva,
     fetch_data_batch, get_ohlcv_batch, get_market_quotes_batch, get_index_constituents_batch
 )
+from .dispatcher_v2 import fetch_data_v2  # type: ignore
 from .registry import REGISTRY
+from .registry_v2 import REGISTRY_V2  # type: ignore
 from .schemas.envelope import DataEnvelope, Pagination
 from .schemas.events import (
     EarningsEvent, EarningsForecast, EarningsCalendarRequest, EarningsForecastRequest,
@@ -272,9 +274,23 @@ async def rpc_ohlcv(
     end: Optional[str] = Query(None),
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
-    allow_fallback: bool = Query(False),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
 ):
     # ohlcv uses the CN akshare dataset; for other adapters use /rpc/fetch with adapter
+    dsid = "securities.equity.cn.ohlcv_daily"
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = apply_and_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     env = await get_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
@@ -286,8 +302,22 @@ async def rpc_ohlcva(
     end: Optional[str] = Query(None),
     adjust: str = Query("none"),
     ak_function: Optional[str] = Query(None),
-    allow_fallback: bool = Query(False),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
 ):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    dsid = "securities.equity.cn.ohlcva_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = apply_and_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     env = await get_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
@@ -591,16 +621,29 @@ async def rpc_quote(
     symbols: Optional[List[str]] = Query(None),
     ak_function: Optional[str] = Query(None),
     allow_fallback: bool = Query(False),
-    adapter: Optional[str] = Query(None),
+    adapter: Optional[List[str]] = Query(None),
 ) -> Dict[str, Any]:
     """Get real-time quotes."""
-    if adapter == 'qmt':
+    if adapter and 'qmt' in adapter:
         try:
             from .adapters.qmt_adapter import fetch_realtime_quotes  # type: ignore
             tag, df = await fetch_realtime_quotes(symbols)
             return {"schema_version": "1.0.0", "provider": "qmt", "dataset": "securities.equity.cn.quote.qmt", "params": {"symbols": symbols}, "data": df.to_dict(orient='records'), "ak_function": tag, "data_source": "qmt"}
         except Exception as e:  # noqa: BLE001
             return {"schema_version": "1.0.0", "provider": "qmt", "error": str(e)}
+    # Try v2 dataset if available
+    dsid = "securities.equity.cn.quote"
+    if dsid in REGISTRY_V2:
+        params = {"symbols": symbols}
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return {"error": str(e)}
+        records = apply_and_validate(dsid, df.to_dict(orient='records'))
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return env.model_dump()
     env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return env.model_dump()
 
@@ -2336,3 +2379,49 @@ async def get_easytrader_risk_metrics(
             risk_metrics=None,
             source="easytrader_adapter"
         )
+
+
+@app.get("/rpc/fetch_v2")
+async def rpc_fetch_v2(
+    dataset_id: str = Query(...),
+    adapter: Optional[List[str]] = Query(None),
+    allow_fallback: bool = Query(True),
+    params: Optional[str] = Query(None, description="JSON string of params"),
+):
+    import json
+    try:
+        p = json.loads(params) if params else {}
+    except Exception:
+        p = {}
+    if dataset_id in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dataset_id, params=p, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = apply_and_validate(dataset_id, df.to_dict(orient="records"))
+        env = _api_make_envelope(dataset_id, p, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    return JSONResponse(content={"error": "dataset_id not in REGISTRY_V2"}, media_type="application/json", status_code=400)
+
+# Local helper to build envelope for v2 paths without relying on dispatcher internals
+
+def _api_make_envelope(dataset_id: str, params: Dict[str, Any], records: List[Dict[str, Any]]) -> DataEnvelope:
+    spec = REGISTRY.get(dataset_id)
+    if spec is not None:
+        category = spec.category
+        domain = spec.domain
+    else:
+        # Fallback parsing
+        parts = dataset_id.split('.')
+        category = parts[0] if parts else 'unknown'
+        domain = '.'.join(parts[:3]) if len(parts) >= 3 else 'unknown'
+    return DataEnvelope(
+        category=category,
+        domain=domain,
+        dataset=dataset_id,
+        params=params,
+        data=records,
+        pagination=Pagination(offset=0, limit=len(records), total=len(records)),
+    )

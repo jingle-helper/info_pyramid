@@ -16,69 +16,60 @@ class RateLimiterManager:
     """Manages rate limiters for different data sources and vendors."""
     
     def __init__(self):
-        self._limiters: Dict[str, AsyncLimiter] = {}
-        self._daily_limiters: Dict[str, AsyncLimiter] = {}
+        # Maintain limiters per event loop to avoid cross-loop reuse
+        self._limiters_by_loop: Dict[int, Dict[str, AsyncLimiter]] = {}
+        self._daily_by_loop: Dict[int, Dict[str, AsyncLimiter]] = {}
         self._initialized = False
         
     async def _ensure_initialized(self):
         """Initialize rate limiters if not already done."""
-        if self._initialized:
+        # Initialization is now per loop
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+        if loop_id in self._limiters_by_loop:
             return
             
         # Initialize Alpha Vantage limiters
         if settings.RATE_LIMIT_ENABLED:
             # Per-minute limiter (5 requests per minute for free tier)
-            self._limiters['alphavantage'] = AsyncLimiter(
-                settings.AV_RATE_LIMIT_PER_MIN, 
-                60.0  # 60 seconds window
-            )
+            self._limiters_by_loop[loop_id] = {
+                'alphavantage': AsyncLimiter(settings.AV_RATE_LIMIT_PER_MIN, 60.0)
+            }
             
             # Daily limiter (500 requests per day for free tier)
-            self._daily_limiters['alphavantage'] = AsyncLimiter(
-                settings.AV_RATE_LIMIT_PER_DAY,
-                86400.0  # 24 hours in seconds
-            )
+            self._daily_by_loop[loop_id] = {
+                'alphavantage': AsyncLimiter(settings.AV_RATE_LIMIT_PER_DAY, 86400.0)
+            }
             
             # Initialize AkShare vendor limiters
             vendor_limits = {
-                'eastmoney': settings.AKSHARE_EASTMONEY_RATE_LIMIT,
-                'sina': settings.AKSHARE_SINA_RATE_LIMIT,
-                'tencent': settings.AKSHARE_TENCENT_RATE_LIMIT,
-                'ths': settings.AKSHARE_THS_RATE_LIMIT,
-                'tdx': settings.AKSHARE_TDX_RATE_LIMIT,
-                'baidu': settings.AKSHARE_BAIDU_RATE_LIMIT,
-                'netease': settings.AKSHARE_NETEASE_RATE_LIMIT,
-                'hexun': settings.AKSHARE_HEXUN_RATE_LIMIT,
-                'csindex': settings.AKSHARE_CSINDEX_RATE_LIMIT,
-                'jisilu': settings.AKSHARE_JISILU_RATE_LIMIT,
+                # Relax defaults for local/dev verification
+                'eastmoney': max(120, settings.AKSHARE_EASTMONEY_RATE_LIMIT),
+                'sina': max(120, settings.AKSHARE_SINA_RATE_LIMIT),
+                'tencent': max(120, settings.AKSHARE_TENCENT_RATE_LIMIT),
+                'ths': max(60, settings.AKSHARE_THS_RATE_LIMIT),
+                'tdx': max(120, settings.AKSHARE_TDX_RATE_LIMIT),
+                'baidu': max(60, settings.AKSHARE_BAIDU_RATE_LIMIT),
+                'netease': max(120, settings.AKSHARE_NETEASE_RATE_LIMIT),
+                'hexun': max(60, settings.AKSHARE_HEXUN_RATE_LIMIT),
+                'csindex': max(60, settings.AKSHARE_CSINDEX_RATE_LIMIT),
+                'jisilu': max(30, settings.AKSHARE_JISILU_RATE_LIMIT),
             }
             
             for vendor, limit in vendor_limits.items():
-                self._limiters[f'akshare_{vendor}'] = AsyncLimiter(limit, 60.0)
+                self._limiters_by_loop[loop_id][f'akshare_{vendor}'] = AsyncLimiter(limit, 60.0)
             
             # Default AkShare limiter
-            self._limiters['akshare_default'] = AsyncLimiter(
-                settings.AKSHARE_DEFAULT_RATE_LIMIT, 
-                60.0
-            )
+            self._limiters_by_loop[loop_id]['akshare_default'] = AsyncLimiter(max(120, settings.AKSHARE_DEFAULT_RATE_LIMIT), 60.0)
             
             # Snowball rate limiters
-            self._limiters['snowball_default'] = AsyncLimiter(
-                settings.SNOWBALL_DEFAULT_RATE_LIMIT,
-                60.0
-            )
+            self._limiters_by_loop[loop_id]['snowball_default'] = AsyncLimiter(max(120, settings.SNOWBALL_DEFAULT_RATE_LIMIT), 60.0)
             
             # EasyTrader rate limiters
-            self._limiters['easytrader_default'] = AsyncLimiter(
-                settings.EASYTRADER_DEFAULT_RATE_LIMIT,
-                60.0
-            )
-            self._limiters['easytrader_login'] = AsyncLimiter(
-                settings.EASYTRADER_LOGIN_RATE_LIMIT,
-                60.0
-            )
+            self._limiters_by_loop[loop_id]['easytrader_default'] = AsyncLimiter(max(60, settings.EASYTRADER_DEFAULT_RATE_LIMIT), 60.0)
+            self._limiters_by_loop[loop_id]['easytrader_login'] = AsyncLimiter(max(10, settings.EASYTRADER_LOGIN_RATE_LIMIT), 60.0)
             
-            logger.info(f"Rate limiting initialized with {len(self._limiters)} limiters")
+            logger.debug(f"Rate limiter pool created with {len(self._limiters_by_loop[loop_id])} limiters for loop {loop_id}")
         else:
             logger.info("Rate limiting disabled")
             
@@ -97,13 +88,21 @@ class RateLimiterManager:
             
         await self._ensure_initialized()
         
+        loop_id = id(asyncio.get_running_loop())
         limiter_key = self._get_limiter_key(source, vendor)
-        limiter = self._limiters.get(limiter_key)
+        limiter = self._limiters_by_loop.get(loop_id, {}).get(limiter_key)
         
         if limiter:
             try:
+                loop = asyncio.get_running_loop()
+                start = loop.time()
                 await limiter.acquire()
-                logger.debug(f"Rate limit acquired for {limiter_key}")
+                waited = (loop.time() - start)
+                # Only log when we actually throttled (waited > 20ms)
+                if waited > 0.02:
+                    logger.warning(f"Rate limited {limiter_key}: waited {waited*1000:.1f}ms")
+                else:
+                    logger.debug(f"Rate limit acquired for {limiter_key}")
             except Exception as e:
                 logger.warning(f"Failed to acquire rate limit for {limiter_key}: {e}")
         else:
@@ -121,7 +120,8 @@ class RateLimiterManager:
             
         await self._ensure_initialized()
         
-        daily_limiter = self._daily_limiters.get(source)
+        loop_id = id(asyncio.get_running_loop())
+        daily_limiter = self._daily_by_loop.get(loop_id, {}).get(source)
         if daily_limiter:
             try:
                 await daily_limiter.acquire()
