@@ -301,34 +301,78 @@ class FinancialDataAdapter:
         try:
             await acquire_rate_limit('akshare', 'eastmoney')
             
-            # Map statement type to AkShare function
-            function_mapping = {
+            # Choose AkShare function based on period with fallbacks
+            mapping_quarterly = {
                 'balance_sheet': 'stock_balance_sheet_by_report_em',
-                'income_statement': 'stock_profit_sheet_by_report_em',
-                'cash_flow': 'stock_cash_flow_sheet_by_report_em'
+                'income_statement': 'stock_profit_sheet_by_quarterly_em',
+                'cash_flow': 'stock_cash_flow_sheet_by_quarterly_em',
             }
-            
-            function_name = function_mapping.get(statement_type)
-            if not function_name:
+            mapping_annual = {
+                'balance_sheet': 'stock_balance_sheet_by_yearly_em',
+                'income_statement': 'stock_profit_sheet_by_yearly_em',
+                'cash_flow': 'stock_cash_flow_sheet_by_yearly_em',
+            }
+            primary = (mapping_quarterly if period == 'quarterly' else mapping_annual).get(statement_type)
+            if not primary:
                 raise FinancialDataError(f"Unsupported statement type: {statement_type}")
             
-            df = await call_akshare(
-                [function_name],
-                {'symbol': symbol},
-                function_name=function_name
-            )
+            candidates: List[str] = [primary]
+            # Add report-based fallbacks
+            report_fallbacks = {
+                'balance_sheet': 'stock_balance_sheet_by_report_em',
+                'income_statement': 'stock_profit_sheet_by_report_em',
+                'cash_flow': 'stock_cash_flow_sheet_by_report_em',
+            }
+            rf = report_fallbacks.get(statement_type)
+            if rf and rf not in candidates:
+                candidates.append(rf)
+            # Add delisted fallbacks
+            delisted_map = {
+                'balance_sheet': 'stock_balance_sheet_by_report_delisted_em',
+                'income_statement': 'stock_profit_sheet_by_report_delisted_em',
+                'cash_flow': 'stock_cash_flow_sheet_by_report_delisted_em',
+            }
+            df = pd.DataFrame()
+            last_err: Optional[Exception] = None
+            for fn in candidates:
+                try:
+                    df = await call_akshare([fn], {'symbol': symbol}, function_name=fn)
+                    if not df.empty:
+                        break
+                except Exception as e:
+                    last_err = e
+                    continue
+            if df.empty:
+                # Try delisted variant
+                dfn = delisted_map.get(statement_type)
+                if dfn:
+                    try:
+                        df = await call_akshare([dfn], {'symbol': symbol}, function_name=dfn)
+                    except Exception as e:
+                        last_err = e
+            # Fallback to THS endpoints if still empty
+            if df.empty:
+                ths_map = {
+                    'balance_sheet': 'stock_financial_debt_ths',
+                    'income_statement': 'stock_financial_benefit_ths',
+                    'cash_flow': 'stock_financial_cash_ths',
+                }
+                tfn = ths_map.get(statement_type)
+                if tfn:
+                    try:
+                        await acquire_rate_limit('akshare', 'ths')
+                        df = await call_akshare([tfn], {'symbol': symbol}, function_name=tfn)
+                    except Exception as e:
+                        last_err = e
             
             if not df.empty:
-                # Filter by period
-                if period == 'quarterly':
-                    df = df[df['REPORT_DATE'].str.contains('Q', na=False)]
-                else:  # annual
-                    df = df[~df['REPORT_DATE'].str.contains('Q', na=False)]
-                
                 # Standardize column names
                 df = self._standardize_cn_statement_columns(df, statement_type)
-                
                 return df
+            else:
+                if last_err:
+                    logger.warning(f"CN {statement_type} empty for {symbol}. Last error: {last_err}")
+                return pd.DataFrame()
                 
         except Exception as e:
             logger.warning(f"Failed to get CN {statement_type} for {symbol}: {e}")
@@ -345,20 +389,11 @@ class FinancialDataAdapter:
         try:
             await acquire_rate_limit('akshare', 'eastmoney')
             
-            # Map statement type to EastMoney function
-            function_mapping = {
-                'balance_sheet': 'stock_financial_us_report_em',
-                'income_statement': 'stock_financial_us_report_em',
-                'cash_flow': 'stock_financial_us_report_em'
-            }
-            
-            function_name = function_mapping.get(statement_type)
-            if not function_name:
-                raise FinancialDataError(f"Unsupported statement type: {statement_type}")
-            
+            # Use EastMoney consolidated US report endpoint
+            function_name = 'stock_financial_us_report_em'
             df = await call_akshare(
                 [function_name],
-                {'symbol': symbol, 'statement_type': statement_type},
+                {'symbol': symbol},
                 function_name=function_name
             )
             
@@ -452,20 +487,11 @@ class FinancialDataAdapter:
         try:
             await acquire_rate_limit('akshare', 'eastmoney')
             
-            # Map statement type to EastMoney function
-            function_mapping = {
-                'balance_sheet': 'stock_financial_hk_report_em',
-                'income_statement': 'stock_financial_hk_report_em',
-                'cash_flow': 'stock_financial_hk_report_em'
-            }
-            
-            function_name = function_mapping.get(statement_type)
-            if not function_name:
-                raise FinancialDataError(f"Unsupported statement type: {statement_type}")
-            
+            # Use EastMoney consolidated HK report endpoint
+            function_name = 'stock_financial_hk_report_em'
             df = await call_akshare(
                 [function_name],
-                {'symbol': symbol, 'statement_type': statement_type},
+                {'symbol': symbol},
                 function_name=function_name
             )
             

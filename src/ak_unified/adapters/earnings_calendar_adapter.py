@@ -76,25 +76,55 @@ class EarningsCalendarAdapter:
             # Try EastMoney first (most comprehensive)
             await acquire_rate_limit('akshare', 'eastmoney')
             
-            # Get earnings calendar from EastMoney
-            df = await call_akshare(
-                ['stock_financial_report_em'],
-                {},
-                function_name='stock_financial_report_em'
-            )
+            # Prefer symbol-scoped queries via financial abstract or notices
+            results: List[pd.DataFrame] = []
+            if symbols:
+                for sym in symbols[:50]:
+                    try:
+                        df_sym = await call_akshare(
+                            ['stock_financial_abstract'],
+                            {'symbol': sym},
+                            function_name='stock_financial_abstract'
+                        )
+                        if df_sym.empty:
+                            df_sym = await call_akshare(
+                                ['stock_financial_abstract_ths'],
+                                {'symbol': sym},
+                                function_name='stock_financial_abstract_ths'
+                            )
+                        if not df_sym.empty:
+                            df_sym['symbol'] = sym
+                            results.append(df_sym)
+                            continue
+                    except Exception:
+                        pass
+                    try:
+                        df_notice = await call_akshare(
+                            ['stock_notice_report'],
+                            {'symbol': sym},
+                            function_name='stock_notice_report'
+                        )
+                        if not df_notice.empty:
+                            df_notice['symbol'] = sym
+                            results.append(df_notice)
+                    except Exception:
+                        continue
+                if results:
+                    df = pd.concat(results, ignore_index=True)
+                else:
+                    df = pd.DataFrame()
+            else:
+                # Without symbols, fall back to Baidu report time below
+                df = pd.DataFrame()
             
             if df.empty:
-                return df
+                raise EarningsCalendarError('No CN earnings data from EastMoney endpoints')
             
             # Filter by date range if specified
-            if start_date:
+            if start_date and 'report_date' in df.columns:
                 df = df[df['report_date'] >= start_date]
-            if end_date:
+            if end_date and 'report_date' in df.columns:
                 df = df[df['report_date'] <= end_date]
-            
-            # Filter by symbols if specified
-            if symbols:
-                df = df[df['symbol'].isin(symbols)]
             
             # Standardize column names
             df = self._standardize_cn_columns(df)
@@ -132,7 +162,7 @@ class EarningsCalendarAdapter:
         try:
             await acquire_rate_limit('akshare', 'eastmoney')
             
-            # Get US earnings data from EastMoney
+            # Get US earnings data from EastMoney (consolidated)
             df = await call_akshare(
                 ['stock_financial_us_report_em'],
                 {},
@@ -278,11 +308,19 @@ class EarningsCalendarAdapter:
         try:
             await acquire_rate_limit('akshare', 'eastmoney')
             
+            # Try abstract first
             df = await call_akshare(
-                ['stock_financial_report_em'],
+                ['stock_financial_abstract'],
                 {'symbol': symbol},
-                function_name='stock_financial_report_em'
+                function_name='stock_financial_abstract'
             )
+            if df.empty:
+                # Fallback to notices
+                df = await call_akshare(
+                    ['stock_notice_report'],
+                    {'symbol': symbol},
+                    function_name='stock_notice_report'
+                )
             
             if not df.empty:
                 df = self._standardize_cn_columns(df)
