@@ -35,7 +35,15 @@ def _load_json_env(env_name: str) -> Any:
 
 def _get_fn_aliases() -> Dict[str, List[str]]:
     data = _load_json_env("AKU_AKSHARE_FN_ALIASES")
-    return data if isinstance(data, dict) else {}
+    aliases = data if isinstance(data, dict) else {}
+    # Built-in safe aliases for known renames
+    builtin = {
+        'stock_profit_forecast': ['stock_profit_forecast_em'],
+    }
+    for k, v in builtin.items():
+        if k not in aliases:
+            aliases[k] = v
+    return aliases
 
 
 def _get_field_mapping_overrides() -> Dict[str, Dict[str, str]]:

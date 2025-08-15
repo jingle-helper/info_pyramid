@@ -4,7 +4,7 @@ Earnings Calendar Adapter
 Provides access to earnings calendar data including:
 - Earnings release dates
 - Earnings forecasts
-- Important announcements
+- Financial abstracts and important announcements (CN)
 """
 
 from __future__ import annotations
@@ -388,9 +388,9 @@ class EarningsCalendarAdapter:
             
             # Get profit forecast
             df = await call_akshare(
-                ['stock_profit_forecast'],
+                ['stock_profit_forecast_em'],
                 {'symbol': symbol},
-                function_name='stock_profit_forecast'
+                function_name='stock_profit_forecast_em'
             )
             
             if not df.empty:
