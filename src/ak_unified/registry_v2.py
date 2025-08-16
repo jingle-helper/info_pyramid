@@ -208,8 +208,7 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history", param_transform=_efinance_ohlcv_params),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
-        # Temporarily disable qstock due to py_mini_racer issues
-        # ProviderSpec(adapter="qstock", api_id="history"),
+        ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -224,8 +223,7 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history", param_transform=_efinance_ohlcv_params),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
-        # Temporarily disable qstock
-        # ProviderSpec(adapter="qstock", api_id="history"),
+        ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -237,8 +235,7 @@ REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney", param_transform=lambda p: {}),
         ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
-        # Temporarily disable qstock
-        # ProviderSpec(adapter="qstock", api_id="realtime"),
+        ProviderSpec(adapter="qstock", api_id="realtime", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info", param_transform=lambda p: {"symbol": (p.get("symbols") or [None])[0]}),
     ],
 )
@@ -252,6 +249,7 @@ REGISTRY_V2["securities.equity.cn.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_min_em", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
+        ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
     ],
 )
 
@@ -263,6 +261,7 @@ REGISTRY_V2["securities.equity.cn.ohlcva_min"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_min_em", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
+        ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
     ],
 )
 
@@ -274,6 +273,7 @@ REGISTRY_V2["market.index.cn.ohlcv_daily"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_zh_index_daily", vendor="eastmoney", param_transform=_index_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_index_params),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_index_params),
     ],
 )
 
@@ -284,6 +284,7 @@ REGISTRY_V2["market.index.cn.ohlcva_daily"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_zh_index_daily", vendor="eastmoney", param_transform=_index_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_index_params),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_index_params),
     ],
 )
 
@@ -295,6 +296,7 @@ REGISTRY_V2["securities.fund.cn.nav_daily"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="fund_open_fund_info_em", vendor="eastmoney", param_transform=_fund_params),
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_fund_params),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_fund_params),
     ],
 )
 
@@ -305,6 +307,7 @@ REGISTRY_V2["securities.board.cn.industry.list"] = DatasetV2(
     domain="securities.board.cn",
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_board_industry_name_em", vendor="eastmoney", param_transform=_board_params),
+        ProviderSpec(adapter="baostock", api_id="query_stock_industry", param_transform=_board_params),
         ProviderSpec(adapter="qstock", api_id="industry_list", param_transform=_qstock_params),
     ],
 )
@@ -315,6 +318,7 @@ REGISTRY_V2["securities.board.cn.concept.list"] = DatasetV2(
     domain="securities.board.cn",
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_board_concept_name_em", vendor="eastmoney", param_transform=_board_params),
+        ProviderSpec(adapter="baostock", api_id="query_stock_industry", param_transform=_board_params),
         ProviderSpec(adapter="qstock", api_id="concept_list", param_transform=_qstock_params),
     ],
 )
@@ -325,6 +329,7 @@ REGISTRY_V2["securities.board.cn.industry.constituents"] = DatasetV2(
     domain="securities.board.cn",
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_board_industry_cons_em", vendor="eastmoney", param_transform=_board_params),
+        ProviderSpec(adapter="baostock", api_id="query_stock_industry", param_transform=_board_params),
         ProviderSpec(adapter="qstock", api_id="industry_stocks", param_transform=_qstock_params),
     ],
 )
@@ -335,6 +340,7 @@ REGISTRY_V2["securities.board.cn.concept.constituents"] = DatasetV2(
     domain="securities.board.cn",
     providers=[
         ProviderSpec(adapter="akshare", api_id="stock_board_concept_cons_em", vendor="eastmoney", param_transform=_board_params),
+        ProviderSpec(adapter="baostock", api_id="query_stock_industry", param_transform=_board_params),
         ProviderSpec(adapter="qstock", api_id="concept_stocks", param_transform=_qstock_params),
     ],
 )
@@ -347,6 +353,7 @@ REGISTRY_V2["securities.equity.us.ohlcv_daily"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
     ],
 )
 
@@ -357,6 +364,7 @@ REGISTRY_V2["securities.equity.us.ohlcv_min"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
     ],
 )
 
@@ -368,6 +376,7 @@ REGISTRY_V2["securities.equity.hk.ohlcv_daily"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
     ],
 )
 
@@ -378,6 +387,7 @@ REGISTRY_V2["securities.equity.hk.ohlcv_min"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
     ],
 )
 
@@ -419,5 +429,6 @@ REGISTRY_V2["market.calendar.cn"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="tool_trade_date_hist_sina", vendor="sina", param_transform=lambda p: {}),
         ProviderSpec(adapter="baostock", api_id="query_trade_dates", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
     ],
 )
