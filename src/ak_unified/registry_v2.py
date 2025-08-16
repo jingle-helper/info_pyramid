@@ -175,6 +175,77 @@ def _board_params(p: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _adata_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for adata adapter.
+    
+    adata expects:
+    - symbol: without .SH/.SZ/.BJ suffix
+    - start: YYYY-MM-DD format
+    - end: YYYY-MM-DD format
+    """
+    symbol = _strip_suffix(p.get("symbol") or p.get("symbols"))
+    return {
+        "symbol": symbol,
+        "start": p.get("start"),
+        "end": p.get("end"),
+    }
+
+
+def _easytrader_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for easytrader adapter.
+    
+    easytrader expects:
+    - username, password, exe_path, comm_password for login
+    - start_date, end_date for trading history
+    - symbols list for market data
+    """
+    return {
+        "username": p.get("username"),
+        "password": p.get("password"),
+        "exe_path": p.get("exe_path"),
+        "comm_password": p.get("comm_password"),
+        "start_date": p.get("start_date") or p.get("start"),
+        "end_date": p.get("end_date") or p.get("end"),
+        "symbols": p.get("symbols"),
+        "broker": p.get("broker", "universal"),
+    }
+
+
+def _qmt_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for qmt adapter.
+    
+    qmt expects:
+    - symbol: without .SH/.SZ/.BJ suffix
+    - start: YYYY-MM-DD format
+    - end: YYYY-MM-DD format
+    """
+    symbol = _strip_suffix(p.get("symbol") or p.get("symbols"))
+    return {
+        "symbol": symbol,
+        "start": p.get("start"),
+        "end": p.get("end"),
+    }
+
+
+def _snowball_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for snowball adapter.
+    
+    snowball expects:
+    - symbol: as provided
+    - market: cn/hk/us
+    - period: annual/quarterly for financial data
+    - limit: for reports and discussions
+    - days: for sentiment analysis
+    """
+    return {
+        "symbol": p.get("symbol"),
+        "market": p.get("market", "cn"),
+        "period": p.get("period", "annual"),
+        "limit": p.get("limit", 20),
+        "days": p.get("days", 7),
+    }
+
+
 @dataclass
 class ProviderSpec:
     adapter: str
@@ -209,6 +280,8 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
+        ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
+        ProviderSpec(adapter="qmt", api_id="ohlcv_daily", param_transform=_qmt_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -224,6 +297,8 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
+        ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
+        ProviderSpec(adapter="qmt", api_id="ohlcv_daily", param_transform=_qmt_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -236,6 +311,10 @@ REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_spot_em", vendor="eastmoney", param_transform=lambda p: {}),
         ProviderSpec(adapter="efinance", api_id="stock.get_realtime_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="qstock", api_id="realtime", param_transform=lambda p: {"symbols": p.get("symbols")}),
+        ProviderSpec(adapter="adata", api_id="get_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
+        ProviderSpec(adapter="qmt", api_id="quote", param_transform=lambda p: {"symbols": p.get("symbols")}),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
+        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
         ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info", param_transform=lambda p: {"symbol": (p.get("symbols") or [None])[0]}),
     ],
 )
@@ -250,6 +329,8 @@ REGISTRY_V2["securities.equity.cn.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
+        ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
+        ProviderSpec(adapter="qmt", api_id="ohlcv_min", param_transform=_qmt_params),
     ],
 )
 
@@ -262,6 +343,8 @@ REGISTRY_V2["securities.equity.cn.ohlcva_min"] = DatasetV2(
         ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
+        ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
+        ProviderSpec(adapter="qmt", api_id="ohlcv_min", param_transform=_qmt_params),
     ],
 )
 
@@ -354,6 +437,11 @@ REGISTRY_V2["securities.equity.us.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
 )
 
@@ -365,6 +453,9 @@ REGISTRY_V2["securities.equity.us.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
 )
 
@@ -377,6 +468,11 @@ REGISTRY_V2["securities.equity.hk.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
 )
 
@@ -388,6 +484,9 @@ REGISTRY_V2["securities.equity.hk.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
+        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
+        ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
 )
 
@@ -430,5 +529,43 @@ REGISTRY_V2["market.calendar.cn"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="tool_trade_date_hist_sina", vendor="sina", param_transform=lambda p: {}),
         ProviderSpec(adapter="baostock", api_id="query_trade_dates", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
+    ],
+)
+
+# EasyTrader datasets
+REGISTRY_V2["trading.account.info"] = DatasetV2(
+    dataset_id="trading.account.info",
+    category="trading",
+    domain="trading.account",
+    providers=[
+        ProviderSpec(adapter="easytrader", api_id="account_info", param_transform=_easytrader_params),
+    ],
+)
+
+REGISTRY_V2["trading.portfolio"] = DatasetV2(
+    dataset_id="trading.portfolio",
+    category="trading",
+    domain="trading.portfolio",
+    providers=[
+        ProviderSpec(adapter="easytrader", api_id="portfolio", param_transform=_easytrader_params),
+    ],
+)
+
+# Snowball datasets
+REGISTRY_V2["research.financial_data"] = DatasetV2(
+    dataset_id="research.financial_data",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="financial_data", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["research.sentiment"] = DatasetV2(
+    dataset_id="research.sentiment",
+    category="research",
+    domain="research.sentiment",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="sentiment", param_transform=_snowball_params),
     ],
 )
