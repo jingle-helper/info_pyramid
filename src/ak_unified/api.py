@@ -2640,12 +2640,6 @@ async def rpc_concept_constituents(
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     # 使用v1的get_market_quote作为fallback，因为get_concept_constituents不存在
-    env = await get_market_validate(dsid, records)
-        env = _api_make_envelope(dsid, params, records)
-        env.ak_function = fn_used
-        env.data_source = ",".join(adapter or []) if adapter else "v2"
-        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    # 使用v1的get_market_quote作为fallback，因为get_concept_constituents不存在
     env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
