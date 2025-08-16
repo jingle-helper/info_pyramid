@@ -31,11 +31,30 @@ def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
     """Transform parameters for baostock adapter.
     
     baostock expects:
-    - symbol: without .SH/.SZ/.BJ suffix
+    - symbol: sh.600000 or sz.000001 format
     - start: YYYYMMDD format
     - end: YYYYMMDD format
     """
-    symbol = _strip_suffix(p.get("symbol") or p.get("symbols"))
+    raw_symbol = p.get("symbol") or p.get("symbols") or ""
+    if not raw_symbol:
+        return {"symbol": "", "start": "19700101", "end": "22220101"}
+    
+    # Convert 600000.SH -> sh.600000, 000001.SZ -> sz.000001
+    if raw_symbol.endswith('.SH'):
+        symbol = f"sh.{raw_symbol[:-3]}"
+    elif raw_symbol.endswith('.SZ'):
+        symbol = f"sz.{raw_symbol[:-3]}"
+    elif raw_symbol.endswith('.BJ'):
+        symbol = f"bj.{raw_symbol[:-3]}"
+    else:
+        # Assume it's already in correct format or try to guess
+        if raw_symbol.startswith('6'):
+            symbol = f"sh.{raw_symbol}"
+        elif raw_symbol.startswith('0') or raw_symbol.startswith('3'):
+            symbol = f"sz.{raw_symbol}"
+        else:
+            symbol = raw_symbol
+    
     start = _yyyymmdd(p.get("start")) or "19700101"
     end = _yyyymmdd(p.get("end")) or "22220101"
     return {
@@ -236,6 +255,7 @@ def _snowball_params(p: Dict[str, Any]) -> Dict[str, Any]:
     - period: annual/quarterly for financial data
     - limit: for reports and discussions
     - days: for sentiment analysis
+    - token: xq_a_token for authentication
     """
     return {
         "symbol": p.get("symbol"),
@@ -243,6 +263,7 @@ def _snowball_params(p: Dict[str, Any]) -> Dict[str, Any]:
         "period": p.get("period", "annual"),
         "limit": p.get("limit", 20),
         "days": p.get("days", 7),
+        "token": p.get("token") or p.get("xq_a_token"),
     }
 
 

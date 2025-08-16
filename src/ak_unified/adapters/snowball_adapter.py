@@ -29,9 +29,27 @@ class SnowballAdapterError(BaseAdapterError):
 class SnowballAdapter:
     """Adapter for Snowball data from pysnowball library."""
     
-    def __init__(self):
+    def __init__(self, token: Optional[str] = None):
         self.supported_markets = ['cn', 'hk', 'us']
         self._snowball = None
+        self._token = token
+        
+        # Set token if provided
+        if token:
+            self._set_token(token)
+    
+    def _set_token(self, token: str):
+        """Set Snowball token for authentication."""
+        try:
+            import pysnowball as snowball
+            snowball.set_token(token)
+        except Exception as e:
+            logger.warning(f"Failed to set Snowball token: {e}")
+    
+    def set_token(self, token: str):
+        """Set Snowball token for authentication."""
+        self._token = token
+        self._set_token(token)
     
     def _import_snowball(self):
         """Import pysnowball library."""
@@ -383,7 +401,9 @@ async def call_snowball(
     Returns:
         Tuple of (function_name, DataFrame)
     """
-    adapter = SnowballAdapter()
+    # Get token from params or environment
+    token = params.get('token') or params.get('xq_a_token')
+    adapter = SnowballAdapter(token=token)
     
     if function_name == 'stock_quote':
         df = await adapter.get_stock_quote(

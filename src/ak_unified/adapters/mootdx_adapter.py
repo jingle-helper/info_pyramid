@@ -13,8 +13,10 @@ def _import_mootdx_quotes():
     try:
         from mootdx.quotes import Quotes  # type: ignore
         return Quotes.factory('std')
+    except ImportError as exc:
+        raise MooAdapterError("Failed to import mootdx.quotes. Install with pip install mootdx") from exc
     except Exception as exc:
-        raise MooAdapterError("Failed to import mootdx. Install with pip install mootdx") from exc
+        raise MooAdapterError(f"Failed to initialize mootdx quotes: {exc}") from exc
 
 
 def _import_mootdx_reader():
