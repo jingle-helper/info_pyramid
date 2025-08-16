@@ -82,7 +82,7 @@ async def call_qmt(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.Dat
     try:
         import qmt
         
-        if dataset_id.endswith('.ohlcv_daily.qmt'):
+        if dataset_id.endswith('.ohlcv_daily.qmt') or dataset_id.endswith('.ohlcva_daily.qmt'):
             # Implement QMT OHLCV daily data fetching
             # This is a placeholder - actual implementation depends on QMT API
             df = pd.DataFrame({

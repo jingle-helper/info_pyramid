@@ -282,6 +282,7 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
         ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
         ProviderSpec(adapter="qmt", api_id="ohlcv_daily", param_transform=_qmt_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )
@@ -299,6 +300,7 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="qstock", api_id="history", param_transform=_qstock_params),
         ProviderSpec(adapter="adata", api_id="get_history", param_transform=_adata_params),
         ProviderSpec(adapter="qmt", api_id="ohlcv_daily", param_transform=_qmt_params),
+        ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="yfinance", api_id="download"),
     ],
 )

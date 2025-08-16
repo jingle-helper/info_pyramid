@@ -40,8 +40,8 @@ def call_qstock(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
         if not df.empty:
             df = df.rename(columns={'代码': 'symbol', '名称': 'symbol_name', '最新': 'last', '涨幅': 'pct_change', '成交': 'amount'})
         return ('qstock.realtime', df)
-    # Daily history
-    if '.ohlcv_daily' in dataset_id:
+    # Daily history (OHLCV/OHLCVA)
+    if '.ohlcv_daily' in dataset_id or '.ohlcva_daily' in dataset_id:
         symbol = params.get('symbol')
         try:
             df = qs.history(symbol)

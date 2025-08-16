@@ -26,8 +26,8 @@ def _import_mootdx_reader():
 
 
 def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFrame]:
-    # Daily OHLCV
-    if dataset_id.endswith('ohlcv_daily'):
+    # Daily OHLCV/OHLCVA
+    if dataset_id.endswith('ohlcv_daily') or dataset_id.endswith('ohlcva_daily'):
         q = _import_mootdx_quotes()
         symbol = params.get('symbol')
         if symbol and symbol.endswith('.SH'):

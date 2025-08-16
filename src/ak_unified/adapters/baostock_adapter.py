@@ -45,7 +45,7 @@ def _iter_resultset(rs):
 
 def _handle_call(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFrame]:
     def handle(bs):
-        if dataset_id.endswith('ohlcv_daily'):
+        if dataset_id.endswith('ohlcv_daily') or dataset_id.endswith('ohlcva_daily'):
             symbol = params.get('symbol')
             start = (params.get('start') or '19700101').replace('-', '')
             end = (params.get('end') or '22220101').replace('-', '')
