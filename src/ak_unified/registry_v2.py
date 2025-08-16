@@ -206,6 +206,8 @@ REGISTRY_V2["securities.equity.cn.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history", param_transform=_efinance_ohlcv_params),
+        ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         # Temporarily disable qstock due to py_mini_racer issues
         # ProviderSpec(adapter="qstock", api_id="history"),
         ProviderSpec(adapter="yfinance", api_id="download"),
@@ -220,6 +222,8 @@ REGISTRY_V2["securities.equity.cn.ohlcva_daily"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="akshare", api_id="stock_zh_a_hist_pre", vendor="eastmoney", param_transform=_ohlcv_stock_daily_params, field_mapping=FIELD_OHLCV_CN),
         ProviderSpec(adapter="efinance", api_id="stock.get_quote_history", param_transform=_efinance_ohlcv_params),
+        ProviderSpec(adapter="baostock", api_id="query_history_k_data_plus", param_transform=_baostock_ohlcv_params),
+        ProviderSpec(adapter="mootdx", api_id="bars", param_transform=_mootdx_ohlcv_params),
         # Temporarily disable qstock
         # ProviderSpec(adapter="qstock", api_id="history"),
         ProviderSpec(adapter="yfinance", api_id="download"),
