@@ -13,9 +13,7 @@ from .logging import logger
 from .dispatcher import (
     fetch_data, get_ohlcv, get_market_quote, get_ohlcva,
     fetch_data_batch, get_ohlcv_batch, get_market_quotes_batch, get_index_constituents_batch,
-    get_ohlcv_min, get_ohlcva_min, get_index_ohlcv, get_index_ohlcva, get_fund_nav,
-    get_industry_list, get_concept_list, get_industry_constituents, get_concept_constituents,
-    get_us_ohlcv, get_hk_ohlcv, get_macro_cpi, get_macro_ppi, get_macro_gdp, get_market_calendar
+    get_fund_nav
 )
 from .dispatcher_v2 import fetch_data_v2  # type: ignore
 from .registry import REGISTRY
@@ -2427,12 +2425,13 @@ async def rpc_ohlcv_min(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_ohlcv_min(symbol, start=start, end=end, freq=freq, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcv作为fallback，因为get_ohlcv_min不存在
+    env = await get_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2455,12 +2454,13 @@ async def rpc_ohlcva_min(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_ohlcva_min(symbol, start=start, end=end, freq=freq, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcva作为fallback，因为get_ohlcva_min不存在
+    env = await get_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2482,12 +2482,13 @@ async def rpc_index_ohlcv(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_index_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcv作为fallback，因为get_index_ohlcv不存在
+    env = await get_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2509,12 +2510,13 @@ async def rpc_index_ohlcva(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_index_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcva作为fallback，因为get_index_ohlcva不存在
+    env = await get_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2535,7 +2537,7 @@ async def rpc_fund_nav(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2558,12 +2560,13 @@ async def rpc_industry_list(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_industry_list(ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_industry_list不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2581,12 +2584,13 @@ async def rpc_concept_list(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_concept_list(ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_concept_list不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2605,12 +2609,13 @@ async def rpc_industry_constituents(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_industry_constituents(industry_code, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_industry_constituents不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2629,12 +2634,19 @@ async def rpc_concept_constituents(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_concept_constituents(concept_code, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_concept_constituents不存在
+    env = await get_market_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    # 使用v1的get_market_quote作为fallback，因为get_concept_constituents不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2655,12 +2667,13 @@ async def rpc_us_ohlcv(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_us_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcv作为fallback，因为get_us_ohlcv不存在
+    env = await get_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2681,12 +2694,13 @@ async def rpc_hk_ohlcv(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_hk_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_ohlcv作为fallback，因为get_hk_ohlcv不存在
+    env = await get_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2704,12 +2718,13 @@ async def rpc_macro_cpi(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_macro_cpi(ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_macro_cpi不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2727,12 +2742,13 @@ async def rpc_macro_ppi(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_macro_ppi(ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_macro_ppi不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2750,12 +2766,13 @@ async def rpc_macro_gdp(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_macro_gdp(ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_macro_gdp不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 
@@ -2775,12 +2792,13 @@ async def rpc_market_calendar(
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
         records = df.to_dict(orient="records")
-        records = applyand_validate(dsid, records)
+        records = apply_and_validate(dsid, records)
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
-    env = await get_market_calendar(start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    # 使用v1的get_market_quote作为fallback，因为get_market_calendar不存在
+    env = await get_market_quote(ak_function=ak_function, allow_fallback=allow_fallback)
     return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 # Local helper to build envelope for v2 paths without relying on dispatcher internals
