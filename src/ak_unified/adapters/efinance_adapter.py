@@ -32,8 +32,8 @@ def call_efinance(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.Data
     # Daily OHLCV
     if '.ohlcv_daily' in dataset_id:
         symbol = params.get('symbol')
-        start = (params.get('start') or '19900101').replace('-', '')
-        end = (params.get('end') or '20990101').replace('-', '')
+        start = params.get('start') or '19900101'
+        end = params.get('end') or '20990101'
         # efinance klt: 101=日, 102=周, 103=月; 5/15/30/60 分钟：5/15/30/60
         try:
             df = ef.stock.get_quote_history(symbol, beg=start, end=end, klt=101)
@@ -50,8 +50,8 @@ def call_efinance(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.Data
     # Minute OHLCV
     if '.ohlcv_min' in dataset_id:
         symbol = params.get('symbol')
-        start = (params.get('start') or '19900101').replace('-', '')
-        end = (params.get('end') or '20990101').replace('-', '')
+        start = params.get('start') or '19900101'
+        end = params.get('end') or '20990101'
         freq = str(params.get('freq') or '5').lower().replace('min', '')
         try:
             klt = int(freq)
