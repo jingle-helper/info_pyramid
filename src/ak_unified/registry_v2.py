@@ -452,6 +452,52 @@ REGISTRY_V2["securities.board.cn.concept.constituents"] = DatasetV2(
     ],
 )
 
+# QStock fundamentals datasets
+REGISTRY_V2["securities.equity.cn.fundamentals.income_statement.qstock"] = DatasetV2(
+    dataset_id="securities.equity.cn.fundamentals.income_statement.qstock",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="fundamentals.income_statement.qstock", param_transform=_qstock_params, priority=3),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.fundamentals.balance_sheet.qstock"] = DatasetV2(
+    dataset_id="securities.equity.cn.fundamentals.balance_sheet.qstock",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="fundamentals.balance_sheet.qstock", param_transform=_qstock_params, priority=3),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.fundamentals.cash_flow.qstock"] = DatasetV2(
+    dataset_id="securities.equity.cn.fundamentals.cash_flow.qstock",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="fundamentals.cash_flow.qstock", param_transform=_qstock_params, priority=3),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.fundamentals.indicators.qstock"] = DatasetV2(
+    dataset_id="securities.equity.cn.fundamentals.indicators.qstock",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="fundamentals.indicators.qstock", param_transform=_qstock_params, priority=3),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.fundamentals.earnings_forecast.qstock"] = DatasetV2(
+    dataset_id="securities.equity.cn.fundamentals.earnings_forecast.qstock",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="fundamentals.earnings_forecast.qstock", param_transform=_qstock_params, priority=3),
+    ],
+)
+
 # US market datasets
 REGISTRY_V2["securities.equity.us.ohlcv_daily"] = DatasetV2(
     dataset_id="securities.equity.us.ohlcv_daily",
@@ -522,6 +568,7 @@ REGISTRY_V2["macro.cn.cpi"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="macro_china_cpi_yearly", vendor="stats", param_transform=lambda p: {}),
         ProviderSpec(adapter="akshare", api_id="macro_china_cpi_monthly", vendor="stats", param_transform=lambda p: {}),
+        ProviderSpec(adapter="qstock", api_id="macro.cpi.qstock", param_transform=lambda p: {}, priority=3),
     ],
 )
 
@@ -532,6 +579,7 @@ REGISTRY_V2["macro.cn.ppi"] = DatasetV2(
     providers=[
         ProviderSpec(adapter="akshare", api_id="macro_china_ppi_yearly", vendor="stats", param_transform=lambda p: {}),
         ProviderSpec(adapter="akshare", api_id="macro_china_ppi_monthly", vendor="stats", param_transform=lambda p: {}),
+        ProviderSpec(adapter="qstock", api_id="macro.ppi.qstock", param_transform=lambda p: {}, priority=3),
     ],
 )
 
@@ -541,6 +589,53 @@ REGISTRY_V2["macro.cn.gdp"] = DatasetV2(
     domain="macro.cn",
     providers=[
         ProviderSpec(adapter="akshare", api_id="macro_china_gdp", vendor="stats", param_transform=lambda p: {}),
+        ProviderSpec(adapter="qstock", api_id="macro.gdp.qstock", param_transform=lambda p: {}, priority=3),
+    ],
+)
+
+# Additional macro datasets via QStock
+REGISTRY_V2["macro.cn.pmi"] = DatasetV2(
+    dataset_id="macro.cn.pmi",
+    category="macro",
+    domain="macro.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="macro.pmi.qstock", param_transform=lambda p: {}, priority=3),
+    ],
+)
+
+REGISTRY_V2["macro.cn.money_supply"] = DatasetV2(
+    dataset_id="macro.cn.money_supply",
+    category="macro",
+    domain="macro.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="macro.money_supply.qstock", param_transform=lambda p: {}, priority=3),
+    ],
+)
+
+REGISTRY_V2["macro.cn.interest_rates"] = DatasetV2(
+    dataset_id="macro.cn.interest_rates",
+    category="macro",
+    domain="macro.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="macro.interest_rates.qstock", param_transform=lambda p: {}, priority=3),
+    ],
+)
+
+REGISTRY_V2["macro.cn.exchange_rates"] = DatasetV2(
+    dataset_id="macro.cn.exchange_rates",
+    category="macro",
+    domain="macro.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="macro.exchange_rates.qstock", param_transform=lambda p: {}, priority=3),
+    ],
+)
+
+REGISTRY_V2["macro.cn.real_estate"] = DatasetV2(
+    dataset_id="macro.cn.real_estate",
+    category="macro",
+    domain="macro.cn",
+    providers=[
+        ProviderSpec(adapter="qstock", api_id="macro.real_estate.qstock", param_transform=lambda p: {}, priority=3),
     ],
 )
 
