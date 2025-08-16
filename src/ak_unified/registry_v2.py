@@ -32,12 +32,12 @@ def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
     
     baostock expects:
     - symbol: sh.600000 or sz.000001 format
-    - start: YYYYMMDD format
-    - end: YYYYMMDD format
+    - start: YYYY-MM-DD format
+    - end: YYYY-MM-DD format
     """
     raw_symbol = p.get("symbol") or p.get("symbols") or ""
     if not raw_symbol:
-        return {"symbol": "", "start": "19700101", "end": "22220101"}
+        return {"symbol": "", "start": "1970-01-01", "end": "2222-01-01"}
     
     # Convert 600000.SH -> sh.600000, 000001.SZ -> sz.000001
     if raw_symbol.endswith('.SH'):
@@ -55,8 +55,9 @@ def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
         else:
             symbol = raw_symbol
     
-    start = _yyyymmdd(p.get("start")) or "19700101"
-    end = _yyyymmdd(p.get("end")) or "22220101"
+    # Keep dates in YYYY-MM-DD format for baostock
+    start = p.get("start") or "1970-01-01"
+    end = p.get("end") or "2222-01-01"
     return {
         "symbol": symbol,
         "start": start,

@@ -12,7 +12,42 @@ class MooAdapterError(RuntimeError):
 def _import_mootdx_quotes():
     try:
         from mootdx.quotes import Quotes  # type: ignore
-        return Quotes.factory('std')
+        # Try different server configurations
+        servers_to_try = [
+            ('119.147.212.81', 7709),  # 腾讯服务器
+            ('47.103.48.45', 7709),    # 阿里云服务器
+            ('47.103.86.229', 7709),   # 阿里云服务器
+            ('47.103.88.146', 7709),   # 阿里云服务器
+            ('47.103.86.254', 7709),   # 阿里云服务器
+            ('47.103.86.243', 7709),   # 阿里云服务器
+            ('47.103.86.244', 7709),   # 阿里云服务器
+            ('47.103.86.245', 7709),   # 阿里云服务器
+            ('47.103.86.246', 7709),   # 阿里云服务器
+            ('47.103.86.247', 7709),   # 阿里云服务器
+            ('47.103.86.248', 7709),   # 阿里云服务器
+            ('47.103.86.249', 7709),   # 阿里云服务器
+            ('47.103.86.250', 7709),   # 阿里云服务器
+            ('47.103.86.251', 7709),   # 阿里云服务器
+            ('47.103.86.252', 7709),   # 阿里云服务器
+            ('47.103.86.253', 7709),   # 阿里云服务器
+        ]
+        
+        for ip, port in servers_to_try:
+            try:
+                quotes = Quotes.factory(market='std', server=(ip, port))
+                # Test if the connection works
+                quotes.bars(symbol='000001', frequency=9, start=0, offset=1, market=0)
+                return quotes
+            except Exception:
+                continue
+        
+        # If all servers fail, try the default factory
+        try:
+            return Quotes.factory(market='std')
+        except Exception:
+            # Last resort: create with explicit server
+            return Quotes.factory(market='std', server=('119.147.212.81', 7709))
+            
     except ImportError as exc:
         raise MooAdapterError("Failed to import mootdx.quotes. Install with pip install mootdx") from exc
     except Exception as exc:
