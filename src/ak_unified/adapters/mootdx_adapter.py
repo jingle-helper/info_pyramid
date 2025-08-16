@@ -67,51 +67,117 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
     if dataset_id.endswith('ohlcv_daily') or dataset_id.endswith('ohlcva_daily'):
         q = _import_mootdx_quotes()
         symbol = params.get('symbol')
-        if symbol and symbol.endswith('.SH'):
-            market = 1
-            code = symbol[:6]
-        elif symbol and symbol.endswith('.SZ'):
-            market = 0
-            code = symbol[:6]
+        # Extract 6-digit code from symbol (remove .SH/.SZ/.BJ suffix if present)
+        if symbol and symbol.endswith(('.SH', '.SZ', '.BJ')):
+            code = symbol[:-3]
         else:
-            market = 1
-            code = (symbol or '')[:6]
+            code = symbol or ''
+        
+        # Determine market based on symbol suffix or code prefix
+        if symbol and symbol.endswith('.SH'):
+            market = 1  # Shanghai
+        elif symbol and symbol.endswith('.SZ'):
+            market = 0  # Shenzhen
+        elif symbol and symbol.endswith('.BJ'):
+            market = 2  # Beijing
+        else:
+            # Guess market from code prefix
+            if code.startswith('6'):
+                market = 1  # Shanghai
+            elif code.startswith(('0', '3')):
+                market = 0  # Shenzhen
+            else:
+                market = 1  # Default to Shanghai
+        
+        # Use k() method instead of bars() for better date control
         try:
-            df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
+            # Parse start and end dates if provided
+            start_date = params.get('start')
+            end_date = params.get('end')
+            
+            # Use k() method with date parameters
+            df = q.k(symbol=code, begin=start_date, end=end_date, market=market)
+            
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                # Rename columns to standard format
+                column_mapping = {
+                    'open': 'open', 'high': 'high', 'low': 'low', 
+                    'close': 'close', 'vol': 'volume', 'volume': 'volume'
+                }
+                for old_col, new_col in column_mapping.items():
+                    if old_col in df.columns and new_col not in df.columns:
+                        df = df.rename(columns={old_col: new_col})
+                
+                # Add symbol column if not present
+                if 'symbol' not in df.columns:
+                    df.insert(0, 'symbol', symbol)
+                
+                return ('mootdx.k_daily', df)
+            else:
+                return ('mootdx.k_daily', pd.DataFrame([]))
+                
         except Exception as exc:
-            raise MooAdapterError(str(exc)) from exc
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            df = df.rename(columns={"open": "open", "high": "high", "low": "low", "close": "close", "vol": "volume"})
-            df.insert(0, 'symbol', symbol)
-            return ('mootdx.bars', df)
-        return ('mootdx.bars', pd.DataFrame([]))
+            raise MooAdapterError(f"Failed to fetch daily data: {exc}") from exc
 
     # Minute OHLCV (5/15/30/60)
     if dataset_id.endswith('ohlcv_min'):
         q = _import_mootdx_quotes()
         symbol = params.get('symbol')
-        if symbol and symbol.endswith('.SH'):
-            market = 1
-            code = symbol[:6]
-        elif symbol and symbol.endswith('.SZ'):
-            market = 0
-            code = symbol[:6]
+        # Extract 6-digit code from symbol (remove .SH/.SZ/.BJ suffix if present)
+        if symbol and symbol.endswith(('.SH', '.SZ', '.BJ')):
+            code = symbol[:-3]
         else:
-            market = 1
-            code = (symbol or '')[:6]
-        freq = str(params.get('freq') or '').lower()
-        # map to TDX frequency code
+            code = symbol or ''
+        
+        # Determine market based on symbol suffix or code prefix
+        if symbol and symbol.endswith('.SH'):
+            market = 1  # Shanghai
+        elif symbol and symbol.endswith('.SZ'):
+            market = 0  # Shenzhen
+        elif symbol and symbol.endswith('.BJ'):
+            market = 2  # Beijing
+        else:
+            # Guess market from code prefix
+            if code.startswith('6'):
+                market = 1  # Shanghai
+            elif code.startswith(('0', '3')):
+                market = 0  # Shenzhen
+            else:
+                market = 1  # Default to Shanghai
+        
+        freq = str(params.get('freq') or '5').lower()
+        # Map to TDX frequency code
         freq_map = {'min5': 0, '5': 0, 'min15': 1, '15': 1, 'min30': 2, '30': 2, 'min60': 3, '60': 3}
         fcode = freq_map.get(freq, 0)
+        
         try:
-            df = q.bars(symbol=code, frequency=fcode, start=0, offset=2000, market=market)
+            # Parse start and end dates if provided
+            start_date = params.get('start')
+            end_date = params.get('end')
+            
+            # Use k() method with date parameters for minute data
+            df = q.k(symbol=code, begin=start_date, end=end_date, market=market, frequency=fcode)
+            
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                # Rename columns to standard format
+                column_mapping = {
+                    'open': 'open', 'high': 'high', 'low': 'low', 
+                    'close': 'close', 'vol': 'volume', 'volume': 'volume'
+                }
+                for old_col, new_col in column_mapping.items():
+                    if old_col in df.columns and new_col not in df.columns:
+                        df = df.rename(columns={old_col: new_col})
+                
+                # Add symbol column if not present
+                if 'symbol' not in df.columns:
+                    df.insert(0, 'symbol', symbol)
+                
+                return (f'mootdx.k_min_{freq}', df)
+            else:
+                return (f'mootdx.k_min_{freq}', pd.DataFrame([]))
+                
         except Exception as exc:
-            raise MooAdapterError(str(exc)) from exc
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            df = df.rename(columns={"open": "open", "high": "high", "low": "low", "close": "close", "vol": "volume"})
-            df.insert(0, 'symbol', symbol)
-            return (f'mootdx.bars_{fcode}', df)
-        return (f'mootdx.bars_{fcode}', pd.DataFrame([]))
+            raise MooAdapterError(f"Failed to fetch minute data: {exc}") from exc
 
     # Blocks (industry/concept)
     if dataset_id in ('securities.board.cn.industry.blocks.mootdx', 'securities.board.cn.concept.blocks.mootdx'):
@@ -154,7 +220,11 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
     if dataset_id == 'securities.equity.cn.adjust_factor.mootdx':
         q = _import_mootdx_quotes()
         symbol = params.get('symbol')
-        code = (symbol or '')[:6]
+        # Extract 6-digit code from symbol (remove .SH/.SZ/.BJ suffix if present)
+        if symbol and symbol.endswith(('.SH', '.SZ', '.BJ')):
+            code = symbol[:-3]
+        else:
+            code = symbol or ''
         try:
             df = q.xdxr(symbol=code)
             if isinstance(df, pd.DataFrame):
@@ -171,7 +241,11 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
         if reader is None:
             return ('mootdx.reader_unavailable', pd.DataFrame([]))
         symbol = params.get('symbol')
-        code = (symbol or '')[:6]
+        # Extract 6-digit code from symbol (remove .SH/.SZ/.BJ suffix if present)
+        if symbol and symbol.endswith(('.SH', '.SZ', '.BJ')):
+            code = symbol[:-3]
+        else:
+            code = symbol or ''
         try:
             if hasattr(reader, 'finance'):
                 df = reader.finance(symbol=code)
