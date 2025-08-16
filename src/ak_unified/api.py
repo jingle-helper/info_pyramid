@@ -12,7 +12,10 @@ from .logging import logger
 
 from .dispatcher import (
     fetch_data, get_ohlcv, get_market_quote, get_ohlcva,
-    fetch_data_batch, get_ohlcv_batch, get_market_quotes_batch, get_index_constituents_batch
+    fetch_data_batch, get_ohlcv_batch, get_market_quotes_batch, get_index_constituents_batch,
+    get_ohlcv_min, get_ohlcva_min, get_index_ohlcv, get_index_ohlcva, get_fund_nav,
+    get_industry_list, get_concept_list, get_industry_constituents, get_concept_constituents,
+    get_us_ohlcv, get_hk_ohlcv, get_macro_cpi, get_macro_ppi, get_macro_gdp, get_market_calendar
 )
 from .dispatcher_v2 import fetch_data_v2  # type: ignore
 from .registry import REGISTRY
@@ -2404,6 +2407,381 @@ async def rpc_fetch_v2(
         env.data_source = ",".join(adapter or []) if adapter else "v2"
         return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
     return JSONResponse(content={"error": "dataset_id not in REGISTRY_V2"}, media_type="application/json", status_code=400)
+
+@app.get("/rpc/ohlcv_min")
+async def rpc_ohlcv_min(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    freq: str = Query("min5"),
+    adjust: str = Query("none"),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust, "freq": freq}
+    dsid = "securities.equity.cn.ohlcv_min"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_ohlcv_min(symbol, start=start, end=end, freq=freq, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/ohlcva_min")
+async def rpc_ohlcva_min(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    freq: str = Query("min5"),
+    adjust: str = Query("none"),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust, "freq": freq}
+    dsid = "securities.equity.cn.ohlcva_min"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_ohlcva_min(symbol, start=start, end=end, freq=freq, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/index_ohlcv")
+async def rpc_index_ohlcv(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    adjust: str = Query("none"),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    dsid = "market.index.cn.ohlcv_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_index_ohlcv(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/index_ohlcva")
+async def rpc_index_ohlcva(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    adjust: str = Query("none"),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end, "adjust": adjust}
+    dsid = "market.index.cn.ohlcva_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_index_ohlcva(symbol, start=start, end=end, adjust=adjust, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/fund_nav")
+async def rpc_fund_nav(
+    fund_code: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"fund_code": fund_code, "start": start, "end": end}
+    dsid = "securities.fund.cn.nav_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_fund_nav(fund_code, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/industry_list")
+async def rpc_industry_list(
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {}
+    dsid = "securities.board.cn.industry.list"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_industry_list(ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/concept_list")
+async def rpc_concept_list(
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {}
+    dsid = "securities.board.cn.concept.list"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_concept_list(ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/industry_constituents")
+async def rpc_industry_constituents(
+    industry_code: str = Query(...),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"board_code": industry_code}
+    dsid = "securities.board.cn.industry.constituents"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_industry_constituents(industry_code, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/concept_constituents")
+async def rpc_concept_constituents(
+    concept_code: str = Query(...),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"board_code": concept_code}
+    dsid = "securities.board.cn.concept.constituents"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_concept_constituents(concept_code, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/us_ohlcv")
+async def rpc_us_ohlcv(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end}
+    dsid = "securities.equity.us.ohlcv_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_us_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/hk_ohlcv")
+async def rpc_hk_ohlcv(
+    symbol: str = Query(...),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"symbol": symbol, "start": start, "end": end}
+    dsid = "securities.equity.hk.ohlcv_daily"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_hk_ohlcv(symbol, start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/macro_cpi")
+async def rpc_macro_cpi(
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {}
+    dsid = "macro.cn.cpi"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_macro_cpi(ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/macro_ppi")
+async def rpc_macro_ppi(
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {}
+    dsid = "macro.cn.ppi"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_macro_ppi(ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/macro_gdp")
+async def rpc_macro_gdp(
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {}
+    dsid = "macro.cn.gdp"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_macro_gdp(ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+
+
+@app.get("/rpc/market_calendar")
+async def rpc_market_calendar(
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    ak_function: Optional[str] = Query(None),
+    allow_fallback: bool = Query(True),
+    adapter: Optional[List[str]] = Query(None),
+):
+    params = {"start": start, "end": end}
+    dsid = "market.calendar.cn"
+    if dsid in REGISTRY_V2:
+        try:
+            fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
+        except ValueError as e:
+            return JSONResponse(content={"error": str(e)}, status_code=400)
+        records = df.to_dict(orient="records")
+        records = applyand_validate(dsid, records)
+        env = _api_make_envelope(dsid, params, records)
+        env.ak_function = fn_used
+        env.data_source = ",".join(adapter or []) if adapter else "v2"
+        return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
+    env = await get_market_calendar(start=start, end=end, ak_function=ak_function, allow_fallback=allow_fallback)
+    return JSONResponse(content=env.model_dump(mode="json"), media_type="application/json")
 
 # Local helper to build envelope for v2 paths without relying on dispatcher internals
 

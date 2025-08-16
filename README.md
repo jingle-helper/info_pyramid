@@ -1,182 +1,365 @@
-# ak-unified
+# AK Unified - 统一金融数据获取框架
 
-Unified interface and schemas for AkShare across macro, market, and securities categories. Managed by `uv` (or pip).
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Requirements
-- Python >= 3.10
-- IBKR features require running TWS/IB Gateway with API enabled; dependency provided via core extra `ibkr` (uses `ib-async`)
-- `mootdx` is included as a dependency (Windows 环境更佳)
+AK Unified 是一个统一的金融数据获取框架，集成了多个数据源和适配器，提供一致的API接口。
 
-## Setup
+## 🚀 特性
+
+- **多数据源支持**: akshare, baostock, mootdx, qmt, efinance, qstock, adata, yfinance, Alpha Vantage, IBKR
+- **统一API接口**: 一致的参数格式和返回数据结构
+- **智能路由**: 自动选择最佳数据源，支持fallback机制
+- **参数转换**: 自动处理不同数据源的参数格式要求
+- **v2架构**: 新的多提供商路由系统，支持adapter优先级和vendor选择
+- **高性能**: 异步支持，并发请求处理
+- **可扩展**: 易于添加新的数据源和适配器
+
+## 📦 安装
+
 ```bash
-uv venv
-uv sync
-uv run python -c "import ak_unified as aku; print(aku.__version__)"
-# optional: create .env for configuration overrides
-cat > .env << 'EOF'
-AKU_DB_DSN=postgres://user:pass@localhost:5432/aku
-AKU_LOG_LEVEL=INFO
-AKU_LOG_JSON=0
-AKU_ALPHAVANTAGE_API_KEY=your_key
-AKU_IB_HOST=127.0.0.1
-AKU_IB_PORT=7497
-AKU_IB_CLIENT_ID=1
-AKU_REGION_MAPPING={"北京":["600000.SH","600519.SH"]}
-EOF
+pip install ak-unified
 ```
 
-## Structure
-- `src/ak_unified/schemas`: Pydantic models for envelopes and domain schemas
-- `src/ak_unified/registry.py`: Dataset registry and computed datasets
-- `src/ak_unified/adapters/*`: Adapters for akshare/baostock/mootdx/qmt/efinance/qstock/adata
-- `src/ak_unified/dispatcher.py`: Unified entrypoints like `fetch_data`, `get_ohlcv`, `get_ohlcva`
-- `src/ak_unified/api.py`: FastAPI app exposing RPC and SSE topics
+或者从源码安装：
 
-## Key features
-- Unified envelope schema with metadata (`ak_function`, `data_source`)
-- Explicit data-source selection via `adapter` and AkShare `ak_function`; optional fallback
-- OHLCVA datasets including amount (成交额):
-  - `securities.equity.cn.ohlcva_daily`, `securities.equity.cn.ohlcva_min`
-  - `market.index.ohlcva`
-  - `securities.board.cn.{industry,concept}.ohlcva_daily` and `.ohlcva_min`
-- Computed datasets:
-  - `market.cn.valuation_momentum.snapshot` (估值分位与动量，支持 index/board)
-  - `market.cn.aggregation.playback`（指数/板块时序回放）
-  - `market.cn.industry_weight_distribution`（指数行业权重分布，自动近似权重）
-  - `market.cn.volume_percentile`（量能分位）
-- Complementary adapters: baostock, mootdx (Windows偏好), qmt (Windows-only), efinance, qstock, adata, yfinance, Alpha Vantage, IBKR
-
-## FastAPI
-Run:
 ```bash
-uv run uvicorn ak_unified.api:app --reload
+git clone https://github.com/your-org/ak-unified.git
+cd ak-unified
+pip install -e .
 ```
-RPC examples:
-- Fetch OHLCVA: `/rpc/ohlcva?symbol=600000.SH&start=2024-01-01&end=2024-01-31&adjust=none`
-- Valuation & momentum: `/rpc/fetch?dataset_id=market.cn.valuation_momentum.snapshot&entity_type=index&ids=沪深300&window=60`
-- Playback (board): `/rpc/fetch?dataset_id=market.cn.aggregation.playback&entity_type=board&ids=半导体&freq=min5&window_n=10`
-- Industry weights: `/rpc/fetch?dataset_id=market.cn.industry_weight_distribution&index_code=000300.SH`
-- Volume percentile: `/rpc/fetch?dataset_id=market.cn.volume_percentile&entity_type=index&ids=沪深300&lookback=120`
-- Board aggregation snapshot: `/rpc/agg/board_snapshot?board_kind=industry&boards=半导体&topn=5&weight_by=amount` (weight_by: none|amount|weight)
-- Index aggregation snapshot: `/rpc/agg/index_snapshot?index_codes=000300.SH&topn=5&weight_by=weight` (当成分含权重列时可用)
-- Aggregation playback: `/rpc/agg/playback?entity_type=board&ids=半导体&freq=min5&window_n=10`
-- Fundamentals (CN):
-  - Indicators: `/rpc/fetch?dataset_id=securities.equity.cn.fundamentals.indicators&symbol=600000.SH&ak_function=stock_financial_analysis_indicator_em`
-  - Score: `/rpc/fetch?dataset_id=securities.equity.cn.fundamentals.score&symbol=600000.SH`
-  - Snapshot: `/rpc/fetch?dataset_id=securities.equity.cn.fundamentals.snapshot&symbol=600000.SH`
-- Fundamentals (HK):
-  - Indicators: `/rpc/fetch?dataset_id=securities.equity.hk.fundamentals.indicators&symbol=00001.HK`
-  - Snapshot: `/rpc/fetch?dataset_id=securities.equity.hk.fundamentals.snapshot&symbol=00001.HK`
-- Fundamentals (US):
-  - Indicators: `/rpc/fetch?dataset_id=securities.equity.us.fundamentals.indicators&symbol=AAPL`
-  - IBKR Overview/Statements/Ratios: `/rpc/fetch?dataset_id=securities.equity.us.fundamentals.overview.ibkr&symbol=AAPL`
-  - Alpha Vantage Fundamentals: `/rpc/fetch?dataset_id=securities.equity.us.fundamentals.income_statement.av&symbol=AAPL&period=annual`
-  - Snapshot: `/rpc/fetch?dataset_id=securities.equity.us.fundamentals.snapshot&symbol=AAPL`
-- Market lists and indices:
-  - A-share list: `/rpc/fetch?dataset_id=securities.equity.cn.list`
-  - Index list: `/rpc/fetch?dataset_id=market.index.cn.list`
-  - Index spot (EM/Sina): `/rpc/fetch?dataset_id=market.index.cn.spot&symbol=上证系列指数`
-  - Index spot (multi-source): `/rpc/fetch?dataset_id=market.index.cn.spot.multi&symbol=上证系列指数`
-  - Index constituents (EM): `/rpc/fetch?dataset_id=market.index.constituents&index_code=000300`
-  - Index constituents (CSIndex): `/rpc/fetch?dataset_id=market.index.constituents.csindex&index_code=000300`
-  - Index weights (CSIndex): `/rpc/fetch?dataset_id=market.index.constituents_weight.csindex&index_code=000300`
-  - Index detail (CNI): `/rpc/fetch?dataset_id=market.index.cni.detail&index_code=H11001`
-  - Index constituents (multi): `/rpc/fetch?dataset_id=market.index.constituents.multi&index_code=000300`
-- Boards and concepts:
-  - Concept list (EM): `/rpc/fetch?dataset_id=securities.board.cn.concept.name_em`
-  - Concept spot (EM): `/rpc/fetch?dataset_id=securities.board.cn.concept.spot_em`
-  - Concept constituents (EM): `/rpc/fetch?dataset_id=securities.board.cn.concept.cons_em&symbol=半导体`
-  - Concept history (EM): `/rpc/fetch?dataset_id=securities.board.cn.concept.hist_em&symbol=半导体&start=2024-01-01&end=2024-06-30`
-  - Concept list (THS): `/rpc/fetch?dataset_id=securities.board.cn.concept.name_ths`
-  - Concept index (THS): `/rpc/fetch?dataset_id=securities.board.cn.concept.index_ths&symbol=半导体`
-  - Concept info (THS): `/rpc/fetch?dataset_id=securities.board.cn.concept.info_ths&symbol=半导体`
-  - Region spot (Sina): `/rpc/fetch?dataset_id=securities.board.cn.region.spot`
-  - HSGT Region ranks (EM): `/rpc/fetch?dataset_id=market.hsgt.board_rank.region&period=今日`
-- Volatility (QVIX):
-  - Daily: `/rpc/fetch?dataset_id=market.volatility.cn.qvix&ak_function=index_option_300etf_qvix`
-  - Minute: `/rpc/fetch?dataset_id=market.volatility.cn.qvix_min&ak_function=index_option_300etf_min_qvix`
-- Sentiment:
-  - News sentiment scope: `/rpc/fetch?dataset_id=market.cn.news_sentiment.scope`
-- Funds:
-  - List: `/rpc/fetch?dataset_id=securities.fund.cn.list`
-  - Basic info: `/rpc/fetch?dataset_id=securities.fund.cn.basic_info&fund_code=510300`
-  - Spot ETF: `/rpc/fetch?dataset_id=securities.fund.cn.spot.etf`
-  - ETF minute: `/rpc/fetch?dataset_id=securities.fund.cn.min.etf&fund_code=510300&start=09:30&end=15:00`
-  - ETF history: `/rpc/fetch?dataset_id=securities.fund.cn.hist.etf&fund_code=510300`
-  - Dividends: `/rpc/fetch?dataset_id=securities.fund.cn.dividend&fund_code=510300`
-  - Fee: `/rpc/fetch?dataset_id=securities.fund.cn.fee&fund_code=510300`
-  - Reports: `/rpc/fetch?dataset_id=securities.fund.cn.reports&fund_code=510300`
-- Bonds:
-  - List: `/rpc/fetch?dataset_id=securities.bond.cn.list`
-  - Detail: `/rpc/fetch?dataset_id=securities.bond.cn.info&bond_code=110031`
-  - Spot: `/rpc/fetch?dataset_id=securities.bond.cn.spot`
-  - Hist: `/rpc/fetch?dataset_id=securities.bond.cn.hist&bond_code=110031&start=2024-01-01&end=2024-06-30`
-  - Yield curves: `/rpc/fetch?dataset_id=securities.bond.cn.yield_curves`
 
-SSE topics:
-- Generic stream: `/topic/stream?dataset_id=securities.equity.cn.quote&interval=2.0`
-- QMT board aggregation: `/topic/qmt/board?board_kind=industry&interval=2&window_n=10&bucket_sec=60&history_buckets=30&adapter_priority=qmt&adapter_priority=akshare&adapter_priority=qstock`
-- QMT index aggregation: `/topic/qmt/index?index_codes=000300.SH&adapter_priority=qmt&adapter_priority=akshare`
-- Board aggregation (polling): `/topic/board?board_kind=industry&boards=半导体&interval=2&window_n=10&topn=5&bucket_sec=60&history_buckets=30`
-- Index aggregation (polling): `/topic/index?index_codes=000300.SH&interval=2&window_n=10&topn=5&bucket_sec=60&history_buckets=30`
+## 🏗️ 架构设计
 
-## Markets coverage
-- A 股（AkShare 为主，baostock/mootdx 等补充）：量价与多数基本面
-- 港股：量价（AkShare 日线；分钟 yfinance/Alpha Vantage/IBKR）、基本面（AkShare/IBKR）
-- 美股：量价（yfinance/Alpha Vantage/IBKR）、基本面（Alpha Vantage 概览/三表/盈利；IBKR 多报告 XML）
+### v1 架构 (传统)
+- 单一数据源路由
+- 基于akshare函数名的路由
+- 简单的fallback机制
 
-所有数据均通过统一的 `DataEnvelope` 返回，并在存储/返回前按数据集前缀进行 schema 归一（时间字段、标识字段、常用数值字段等）；US/HK `quote` 已统一基本字段：`symbol,last,prev_close,change,pct_change,bid,ask,volume`。
+### v2 架构 (新)
+- **多提供商路由**: 一个数据集支持多个适配器
+- **智能优先级**: 基于环境变量和配置的adapter优先级
+- **vendor支持**: 同一适配器的不同数据源选择
+- **统一参数转换**: 所有适配器使用一致的参数处理逻辑
+- **灵活配置**: 支持数据集级别的adapter和vendor优先级
 
-## US/HK data sources
-- yfinance（可选安装 `uv add yfinance` 或 `uv sync --extra yfinance`）
-  - US/HK: `securities.equity.{us|hk}.ohlcv_daily.yf` / `.ohlcv_min.yf` / `.quote.yf`
-  - 无 amount 字段；分钟级受 60d/区间限制
-- Alpha Vantage（无需额外包，需 API Key）
-  - 设置环境变量：`AKU_ALPHAVANTAGE_API_KEY` 或 `ALPHAVANTAGE_API_KEY`
-  - US/HK: `securities.equity.{us|hk}.ohlcv_daily.av` / `.ohlcv_min.av` / `.quote.av`
-  - 内置限速控制：免费版 5 请求/分钟，500 请求/天；Note/Error 情况将返回空结果
-- IBKR（可选安装 `uv sync --extra ibkr`；需运行 TWS/IB Gateway 并允许 API；依赖 `ib-async`，适配器为异步实现）
-  - 连接配置：`AKU_IB_HOST`（默认 127.0.0.1）、`AKU_IB_PORT`（默认 7497）、`AKU_IB_CLIENT_ID`（默认 1）
-  - US/HK 行情：`securities.equity.{us|hk}.ohlcv_daily.ibkr` / `.ohlcv_min.ibkr` / `.quote.ibkr`
-  - 基本面：`securities.equity.us.fundamentals.{overview|statements|ratios|snapshot}.ibkr`
-  - 说明：基本面通过 `reqFundamentalData`（CompanyOverview/ReportsFinStatements/Ratios/ReportSnapshot）；行情历史通过 `reqHistoricalData`，分钟历史受限，按频率和 duration 动态选择；实时快照用 `reqMktData`
+## 🔧 配置
 
-AkShare 对港股：已实现 `quote`、`ohlcv_daily`、财报/指标等；分钟级 `ohlcv_min` 由 yfinance/Alpha Vantage 互补。内置智能限速控制，根据数据源自动应用相应的限速策略。
+### 环境变量配置
 
-## Normalization
-- 系统内置按数据集前缀的标准化规则：时间字段格式化、symbol 大写、常用数值字段转 float 等；并在响应和存储前统一应用
-- 可通过 `AKU_NORMALIZATION_RULES`
+#### Adapter优先级
+```bash
+# 全局adapter优先级
+export AKU_PROVIDER_PRIORITY="akshare,efinance,yfinance,baostock"
 
-## Notes
-- Field names are normalized to snake_case and English.
-- Timezone defaults to Asia/Shanghai unless otherwise specified.
-- Some upstream endpoints may change; switch adapters or specify `ak_function` as needed.
-- Configuration is managed via environment variables (dotenv supported). Key vars:
-  - Logging: `AKU_LOG_LEVEL`, `AKU_LOG_JSON`, `AKU_LOG_FORMAT`
-  - DB/Cache: `AKU_DB_DSN`, `AKU_CACHE_TTL_SECONDS`, `AKU_CACHE_TTL_PER_DATASET`
-  - Blob cache: `AKU_BLOB_ALLOW_PREFIXES`, `AKU_BLOB_MAX_BYTES`, `AKU_BLOB_COMPRESS`
-  - Vendors: `AKU_ALPHAVANTAGE_API_KEY`, `AKU_IB_HOST`, `AKU_IB_PORT`, `AKU_IB_CLIENT_ID`
-  - Rate limiting: `AKU_RATE_LIMIT_ENABLED`, `AKU_AV_RATE_LIMIT_PER_MIN`, `AKU_AKSHARE_EASTMONEY_RATE_LIMIT` 等
-  - Region mapping: `AKU_REGION_MAPPING` (JSON)
+# 特定数据集的adapter优先级
+export AKU_PROVIDER_PRIORITY__securities.equity.cn.ohlcv_daily="efinance,akshare,yfinance"
+```
 
-## AkShare 升级与兼容策略
-- 建议保持 `akshare` 最新（CI 定期执行升级，如 `uv sync -U akshare`）；项目已在适配器层做防御式处理，尽量降低上游变动对成功率的影响：
-  - 参数签名过滤：调用前按函数签名过滤参数，避免上游新增/调整参数导致报错
-  - 函数别名回退：通过环境变量 `AKU_AKSHARE_FN_ALIASES` 提供候选函数名，逐一尝试直到成功
-  - 字段重命名覆盖：通过 `AKU_AKSHARE_FIELD_MAPPING` 覆盖列名映射，减少上游字段改名的影响
-- 环境变量示例：
-```json
-# AKU_AKSHARE_FN_ALIASES
-{
-  "stock_zh_a_hist": ["stock_zh_a_hist_pre", "stock_zh_a_daily"],
-  "stock_board_industry_spot_em": ["stock_board_industry_spot_ths"]
+#### Vendor优先级
+```bash
+# 特定adapter的vendor优先级
+export AKU_VENDOR_PRIORITY__akshare="eastmoney,sina,legulegu"
+
+# 特定数据集和adapter的vendor优先级
+export AKU_VENDOR_PRIORITY__securities.equity.cn.ohlcv_daily__akshare="eastmoney,sina"
+```
+
+### 配置文件示例
+
+创建 `.env` 文件：
+
+```env
+# Adapter优先级配置
+AKU_PROVIDER_PRIORITY=akshare,efinance,yfinance,baostock,mootdx
+
+# Vendor优先级配置
+AKU_VENDOR_PRIORITY__akshare=eastmoney,sina,legulegu
+AKU_VENDOR_PRIORITY__yfinance=yahoo,alpha_vantage
+
+# 特定数据集配置
+AKU_PROVIDER_PRIORITY__securities.equity.cn.ohlcv_daily=efinance,akshare
+AKU_VENDOR_PRIORITY__securities.equity.cn.ohlcv_daily__akshare=eastmoney
+```
+
+## 📊 支持的数据集
+
+### 股票数据 (Equity)
+- **日线数据**: `securities.equity.cn.ohlcv_daily`, `securities.equity.cn.ohlcva_daily`
+- **分钟数据**: `securities.equity.cn.ohlcv_min`, `securities.equity.cn.ohlcva_min`
+- **实时行情**: `securities.equity.cn.quote`
+- **美国市场**: `securities.equity.us.ohlcv_daily`, `securities.equity.us.ohlcv_min`
+- **香港市场**: `securities.equity.hk.ohlcv_daily`, `securities.equity.hk.ohlcv_min`
+
+### 指数数据 (Index)
+- **日线数据**: `market.index.cn.ohlcv_daily`, `market.index.cn.ohlcva_daily`
+
+### 基金数据 (Fund)
+- **净值数据**: `securities.fund.cn.nav_daily`
+
+### 板块数据 (Board)
+- **行业列表**: `securities.board.cn.industry.list`
+- **概念列表**: `securities.board.cn.concept.list`
+- **成分股**: `securities.board.cn.industry.constituents`, `securities.board.cn.concept.constituents`
+
+### 宏观数据 (Macro)
+- **CPI**: `macro.cn.cpi`
+- **PPI**: `macro.cn.ppi`
+- **GDP**: `macro.cn.gdp`
+
+### 市场数据 (Market)
+- **交易日历**: `market.calendar.cn`
+
+## 🚀 使用示例
+
+### 基本使用
+
+```python
+from ak_unified import fetch_data_v2
+
+# 获取股票日线数据
+result = fetch_data_v2(
+    "securities.equity.cn.ohlcv_daily",
+    {"symbol": "600000.SH", "start": "2024-01-01", "end": "2024-01-31"}
+)
+
+# 指定adapter
+result = fetch_data_v2(
+    "securities.equity.cn.ohlcv_daily",
+    {"symbol": "600000.SH", "start": "2024-01-01", "end": "2024-01-31"},
+    adapter=["efinance"]
+)
+
+# 禁用fallback
+result = fetch_data_v2(
+    "securities.equity.cn.ohlcv_daily",
+    {"symbol": "600000.SH", "start": "2024-01-01", "end": "2024-01-31"},
+    allow_fallback=False
+)
+```
+
+### API调用示例
+
+#### 股票数据
+```bash
+# 日线数据 (v2)
+curl "http://localhost:8000/rpc/ohlcv?symbol=600000.SH&start=2024-01-01&end=2024-01-31&adapter=efinance"
+
+# 分钟数据 (v2)
+curl "http://localhost:8000/rpc/ohlcv_min?symbol=600000.SH&start=2024-01-01&end=2024-01-31&freq=min5&adapter=efinance"
+
+# OHLCVA数据 (v2)
+curl "http://localhost:8000/rpc/ohlcva?symbol=600000.SH&start=2024-01-01&end=2024-01-31&adapter=efinance"
+```
+
+#### 指数数据
+```bash
+# 指数日线数据 (v2)
+curl "http://localhost:8000/rpc/index_ohlcv?symbol=000300.SH&start=2024-01-01&end=2024-01-31"
+
+# 指数OHLCVA数据 (v2)
+curl "http://localhost:8000/rpc/index_ohlcva?symbol=000300.SH&start=2024-01-01&end=2024-01-31"
+```
+
+#### 基金数据
+```bash
+# 基金净值数据 (v2)
+curl "http://localhost:8000/rpc/fund_nav?fund_code=000001&start=2024-01-01&end=2024-01-31"
+```
+
+#### 板块数据
+```bash
+# 行业列表 (v2)
+curl "http://localhost:8000/rpc/industry_list"
+
+# 概念列表 (v2)
+curl "http://localhost:8000/rpc/concept_list"
+
+# 行业成分股 (v2)
+curl "http://localhost:8000/rpc/industry_constituents?industry_code=银行"
+
+# 概念成分股 (v2)
+curl "http://localhost:8000/rpc/concept_constituents?concept_code=人工智能"
+```
+
+#### 海外市场
+```bash
+# 美国股票数据 (v2)
+curl "http://localhost:8000/rpc/us_ohlcv?symbol=AAPL&start=2024-01-01&end=2024-01-31"
+
+# 香港股票数据 (v2)
+curl "http://localhost:8000/rpc/hk_ohlcv?symbol=0700.HK&start=2024-01-01&end=2024-01-31"
+```
+
+#### 宏观数据
+```bash
+# CPI数据 (v2)
+curl "http://localhost:8000/rpc/macro_cpi"
+
+# PPI数据 (v2)
+curl "http://localhost:8000/rpc/macro_ppi"
+
+# GDP数据 (v2)
+curl "http://localhost:8000/rpc/macro_gdp"
+```
+
+#### 市场数据
+```bash
+# 交易日历 (v2)
+curl "http://localhost:8000/rpc/market_calendar?start=2024-01-01&end=2024-01-31"
+```
+
+### 参数转换示例
+
+v2系统自动处理不同适配器的参数格式要求：
+
+```python
+# 输入参数
+params = {
+    "symbol": "600000.SH",  # 带后缀的股票代码
+    "start": "2024-01-01",  # 带连字符的日期
+    "end": "2024-01-31"
 }
 
-# AKU_AKSHARE_FIELD_MAPPING
-{
-  "stock_zh_a_hist": {"日期": "date", "开盘": "open", "收盘": "close", "成交量": "volume"}
-}
+# efinance适配器自动转换
+# symbol: "600000.SH" → "600000" (去掉.SH后缀)
+# start: "2024-01-01" → "20240101" (去掉连字符)
+# end: "2024-01-31" → "20240131" (去掉连字符)
+
+# akshare适配器自动转换
+# symbol: "600000.SH" → "600000" (去掉.SH后缀)
+# start: "2024-01-01" → "20240101" (转换为YYYYMMDD格式)
+# end: "2024-01-31" → "20240131" (转换为YYYYMMDD格式)
+
+# mootdx适配器自动转换
+# symbol: "600000.SH" → "600000.SH" (保留后缀，内部处理)
+# start: "2024-01-01" → "20240101" (转换为YYYYMMDD格式)
+# end: "2024-01-31" → "20240131" (转换为YYYYMMDD格式)
 ```
-- 运维建议：
-  - 将上述环境变量纳入部署配置以支持“热修复”
-  - 遇到上游变动时，先通过别名/映射快速恢复，再在 `registry.py` 里调整 `ak_functions` 主备顺序巩固长期兼容
+
+## 🔌 适配器配置
+
+### 支持的适配器
+
+| 适配器 | 平台支持 | 主要市场 | 特点 |
+|--------|----------|----------|------|
+| akshare | 跨平台 | 中国 | 功能全面，数据丰富 |
+| efinance | 跨平台 | 中国 | 轻量级，响应快速 |
+| yfinance | 跨平台 | 美国/香港 | 免费，数据稳定 |
+| baostock | 跨平台 | 中国 | 开源，数据准确 |
+| mootdx | 跨平台 | 中国 | 本地数据，速度快 |
+| qmt | Windows | 中国 | 专业交易软件集成 |
+| qstock | 跨平台 | 中国 | 基于R语言 |
+| adata | 跨平台 | 中国 | 专业数据服务 |
+| Alpha Vantage | 跨平台 | 全球 | 专业金融数据 |
+| IBKR | 跨平台 | 全球 | 专业交易平台 |
+
+### 适配器特性
+
+#### 中国市场适配器
+- **akshare**: 支持股票、指数、基金、板块、宏观等全品类数据
+- **efinance**: 专注于股票数据，响应速度快
+- **baostock**: 开源数据源，数据准确度高
+- **mootdx**: 基于通达信数据，本地化部署
+- **qmt**: Windows专业交易软件集成
+- **qstock**: 基于R语言的数据分析工具
+
+#### 海外市场适配器
+- **yfinance**: 免费的美股和港股数据
+- **Alpha Vantage**: 专业的全球金融数据服务
+- **IBKR**: 专业交易平台数据
+
+## 🎯 最佳实践
+
+### 1. Adapter优先级配置
+```bash
+# 生产环境：优先使用稳定可靠的数据源
+export AKU_PROVIDER_PRIORITY="akshare,efinance,baostock"
+
+# 开发环境：优先使用快速响应的数据源
+export AKU_PROVIDER_PRIORITY="efinance,akshare,yfinance"
+
+# 特定数据集：针对特定需求优化
+export AKU_PROVIDER_PRIORITY__securities.equity.cn.ohlcv_daily="efinance,akshare"
+export AKU_PROVIDER_PRIORITY__market.index.cn.ohlcv_daily="akshare,baostock"
+```
+
+### 2. Vendor选择策略
+```bash
+# 股票数据：优先使用eastmoney
+export AKU_VENDOR_PRIORITY__akshare="eastmoney,sina,legulegu"
+
+# 指数数据：优先使用sina
+export AKU_VENDOR_PRIORITY__market.index.cn.ohlcv_daily__akshare="sina,eastmoney"
+```
+
+### 3. 错误处理和Fallback
+```python
+# 启用fallback，确保数据可用性
+result = fetch_data_v2(
+    "securities.equity.cn.ohlcv_daily",
+    {"symbol": "600000.SH", "start": "2024-01-01", "end": "2024-01-31"},
+    allow_fallback=True  # 默认启用
+)
+
+# 禁用fallback，确保数据一致性
+result = fetch_data_v2(
+    "securities.equity.cn.ohlcv_daily",
+    {"symbol": "600000.SH", "start": "2024-01-01", "end": "2024-01-31"},
+    allow_fallback=False
+)
+```
+
+### 4. 并发请求优化
+```python
+import asyncio
+from ak_unified import fetch_data_v2
+
+async def fetch_multiple_symbols(symbols, start, end):
+    tasks = []
+    for symbol in symbols:
+        task = fetch_data_v2(
+            "securities.equity.cn.ohlcv_daily",
+            {"symbol": symbol, "start": start, "end": end}
+        )
+        tasks.append(task)
+    
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+```
+
+## 🧪 测试
+
+运行测试套件：
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行特定测试
+pytest tests/test_v2_routing.py -v
+
+# 运行覆盖率测试
+pytest --cov=src/ak_unified --cov-report=html
+```
+
+## 📚 文档
+
+- [API参考](docs/API_REFERENCE.md)
+- [适配器开发指南](docs/ADAPTER_DEVELOPMENT.md)
+- [v2架构设计](docs/V2_ARCHITECTURE.md)
+- [配置指南](docs/CONFIGURATION.md)
+- [最佳实践](docs/BEST_PRACTICES.md)
+
+## 🤝 贡献
+
+欢迎贡献代码！请查看 [贡献指南](CONTRIBUTING.md) 了解详情。
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+## 🙏 致谢
+
+感谢所有数据源提供商和开源社区的支持。
