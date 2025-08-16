@@ -2726,7 +2726,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="baostock",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="baostock",
         platform="cross",
         notes="BaoStock API requires serialized login/logout; adapter enforces mutual exclusion",
@@ -2740,7 +2740,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="mootdx",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": p.get("symbol"), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="mootdx",
         platform="local-files",
         notes="Requires local TDX data files; best supported on Windows TDX installation",
@@ -2755,7 +2755,7 @@ register(
         domain="market.cn",
         ak_functions=[],
         source="baostock",
-        param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="baostock",
         platform="cross",
     )
@@ -2780,7 +2780,7 @@ register(
         domain="market.index.cn",
         ak_functions=[],
         source="baostock",
-        param_transform=lambda p: {"index_code": p.get("index_code") or p.get("symbol")},
+        param_transform=lambda p: {"index_code": _strip_suffix(p.get("index_code") or p.get("symbol"))},
         adapter="baostock",
     )
 )
@@ -2792,7 +2792,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="baostock",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="baostock",
     )
 )
@@ -2869,7 +2869,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="baostock",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end"), "freq": (p.get("freq") or "5").replace("min", "")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end")), "freq": (p.get("freq") or "5").replace("min", "")},
         adapter="baostock",
     )
 )
@@ -2881,7 +2881,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="mootdx",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end"), "freq": p.get("freq")},
+        param_transform=lambda p: {"symbol": p.get("symbol"), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end")), "freq": p.get("freq")},
         adapter="mootdx",
     )
 )
@@ -2894,7 +2894,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="qmt",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="qmt",
         platform="windows",
         notes="Windows-only. Requires QMT/ThinkTrader client and native API",
@@ -2908,7 +2908,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="qmt",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end"), "freq": p.get("freq")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end")), "freq": p.get("freq")},
         adapter="qmt",
         platform="windows",
         notes="Windows-only. Requires QMT/ThinkTrader client and native API",
@@ -2936,7 +2936,7 @@ register(
         domain="market.cn",
         ak_functions=[],
         source="qmt",
-        param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="qmt",
         platform="windows",
         notes="Windows-only. Requires QMT/ThinkTrader client and native API",
@@ -2950,7 +2950,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="qmt",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="qmt",
         platform="windows",
         notes="Windows-only. Requires QMT/ThinkTrader client and native API",
@@ -3027,7 +3027,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="efinance",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end"))},
         adapter="efinance",
         platform="cross",
     )
@@ -3039,7 +3039,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="efinance",
-        param_transform=lambda p: {"symbol": p.get("symbol"), "start": p.get("start"), "end": p.get("end"), "freq": p.get("freq")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol")), "start": _yyyymmdd(p.get("start")), "end": _yyyymmdd(p.get("end")), "freq": p.get("freq")},
         adapter="efinance",
         platform="cross",
     )
@@ -3065,7 +3065,7 @@ register(
         domain="securities.equity.cn",
         ak_functions=[],
         source="qstock",
-        param_transform=lambda p: {"symbol": p.get("symbol")},
+        param_transform=lambda p: {"symbol": _strip_suffix(p.get("symbol"))},
         adapter="qstock",
         platform="cross",
     )

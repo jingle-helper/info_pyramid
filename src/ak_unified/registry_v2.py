@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Optional, Any
 ParamTransform = Callable[[Dict[str, any]], Dict[str, any]]
 PostProcess = Callable[["pd.DataFrame", Dict[str, any]], "pd.DataFrame"]
 
-from .registry import _ohlcv_stock_daily_params, FIELD_OHLCV_CN  # reuse v1 transform and field mapping
+from .registry import _ohlcv_stock_daily_params, FIELD_OHLCV_CN, _strip_suffix, _yyyymmdd  # reuse v1 transform and field mapping
 
 
 def _efinance_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
@@ -18,8 +18,8 @@ def _efinance_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
     - end: YYYYMMDD format
     """
     symbol = _strip_suffix(p.get("symbol") or p.get("symbols"))
-    start = _yyyymmdd(p.get("start"))
-    end = _yyyymmdd(p.get("end"))
+    start = _yyyymmdd(p.get("start")) or "19900101"
+    end = _yyyymmdd(p.get("end")) or "20990101"
     return {
         "symbol": symbol,
         "start": start,
@@ -27,18 +27,39 @@ def _efinance_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _strip_suffix(code: Optional[str]) -> str:
-    """Remove .SH/.SZ/.BJ suffix from stock code."""
-    if not code:
-        return ""
-    return code.replace(".SH", "").replace(".SZ", "").replace(".BJ", "")
+def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for baostock adapter.
+    
+    baostock expects:
+    - symbol: without .SH/.SZ/.BJ suffix
+    - start: YYYYMMDD format
+    - end: YYYYMMDD format
+    """
+    symbol = _strip_suffix(p.get("symbol") or p.get("symbols"))
+    start = _yyyymmdd(p.get("start")) or "19700101"
+    end = _yyyymmdd(p.get("end")) or "22220101"
+    return {
+        "symbol": symbol,
+        "start": start,
+        "end": end,
+    }
 
 
-def _yyyymmdd(date_str: Optional[str]) -> str:
-    """Convert date string to YYYYMMDD format."""
-    if not date_str:
-        return "19900101"
-    return date_str.replace("-", "")
+def _mootdx_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
+    """Transform parameters for mootdx adapter.
+    
+    mootdx expects:
+    - symbol: with .SH/.SZ suffix (it handles suffix internally)
+    - start: mootdx uses offset-based approach, so we keep original
+    - end: mootdx uses offset-based approach, so we keep original
+    """
+    # mootdx handles .SH/.SZ suffix internally, so we don't strip it
+    symbol = p.get("symbol") or p.get("symbols") or ""
+    return {
+        "symbol": symbol,
+        "start": p.get("start"),
+        "end": p.get("end"),
+    }
 
 
 @dataclass
