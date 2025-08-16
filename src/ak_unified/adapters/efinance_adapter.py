@@ -29,8 +29,8 @@ def _to_df(obj: Any) -> pd.DataFrame:
 
 def call_efinance(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFrame]:
     ef = _import_efinance()
-    # Daily OHLCV
-    if '.ohlcv_daily' in dataset_id:
+    # Daily OHLCV/OHLCVA (efinance returns amount field, so it supports both)
+    if '.ohlcv_daily' in dataset_id or '.ohlcva_daily' in dataset_id:
         symbol = params.get('symbol')
         start = params.get('start') or '19900101'
         end = params.get('end') or '20990101'
@@ -47,8 +47,8 @@ def call_efinance(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.Data
                 df.insert(0, 'symbol', symbol)
         return ('efinance.stock.get_quote_history', _to_df(df))
 
-    # Minute OHLCV
-    if '.ohlcv_min' in dataset_id:
+    # Minute OHLCV/OHLCVA
+    if '.ohlcv_min' in dataset_id or '.ohlcva_min' in dataset_id:
         symbol = params.get('symbol')
         start = params.get('start') or '19900101'
         end = params.get('end') or '20990101'
