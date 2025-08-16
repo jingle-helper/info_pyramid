@@ -12,7 +12,7 @@
 ### 1. baostock适配器 - 日期格式修复
 
 **问题**: baostock需要`YYYY-MM-DD`格式的日期，而不是`YYYYMMDD`格式
-**修复**: 更新参数转换函数，保持日期在`YYYY-MM-DD`格式
+**修复**: 更新参数转换函数和适配器内部逻辑，保持日期在`YYYY-MM-DD`格式
 
 ```python
 def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
@@ -32,6 +32,7 @@ def _baostock_ohlcv_params(p: Dict[str, Any]) -> Dict[str, Any]:
 - 不再使用`_yyyymmdd()`函数转换日期
 - 直接保持`YYYY-MM-DD`格式
 - 提供合理的默认日期值
+- **关键修复**: 同时更新了`baostock_adapter.py`内部的日期处理逻辑，移除了`.replace('-', '')`转换
 
 ### 2. mootdx适配器 - 服务器配置修复
 
@@ -165,7 +166,7 @@ curl "http://localhost:8000/rpc/ohlcva?symbol=600000.SH&start=2024-01-01&end=202
 
 通过这次修复，我们解决了：
 
-1. **baostock日期格式问题** - 保持正确的YYYY-MM-DD格式
+1. **baostock日期格式问题** - 保持正确的YYYY-MM-DD格式（同时修复了参数转换和适配器内部逻辑）
 2. **mootdx服务器配置问题** - 提供多个可用服务器和连接测试
 
 现在所有适配器都应该能够正常工作：
