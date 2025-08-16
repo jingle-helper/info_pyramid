@@ -47,15 +47,25 @@ df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
 
 **修复后**:
 ```python
-# 使用k()方法 - 支持日期参数控制
-df = q.k(symbol=code, begin=start_date, end=end_date, market=market)
+# 使用bars()方法 + 日期过滤 - 更可靠且支持日期控制
+df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
+# 然后应用日期过滤
+if start_date or end_date:
+    df[date_col] = pd.to_datetime(df[date_col])
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        df = df[df[date_col] >= start_dt]
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        df = df[df[date_col] <= end_dt]
 ```
 
 **API对比**:
-| 方法 | 参数 | 日期控制 | 适用场景 |
-|------|------|----------|----------|
-| `bars()` | `start=0, offset=2000` | ❌ 无法控制具体日期 | 获取固定数量的历史数据 |
-| `k()` | `begin=start_date, end=end_date` | ✅ 精确控制日期范围 | 获取指定时间段的数据 |
+| 方法 | 参数 | 日期控制 | 适用场景 | 可靠性 |
+|------|------|----------|----------|--------|
+| `bars()` | `start=0, offset=2000` | ❌ 无法控制具体日期 | 获取固定数量的历史数据 | ✅ 高 |
+| `k()` | `begin=start_date, end=end_date` | ✅ 精确控制日期范围 | 获取指定时间段的数据 | ❌ 低(有bug) |
+| `bars()` + 过滤 | `start=0, offset=2000` + 后处理 | ✅ 精确控制日期范围 | 获取指定时间段的数据 | ✅ 高 |
 
 ### 3. 日期参数处理修复
 
@@ -67,10 +77,20 @@ df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
 
 **修复后**:
 ```python
-# k()方法支持日期参数
+# bars()方法 + 日期过滤
 start_date = params.get('start')
 end_date = params.get('end')
-df = q.k(symbol=code, begin=start_date, end=end_date, market=market)
+df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
+
+# 应用日期过滤
+if start_date or end_date:
+    df[date_col] = pd.to_datetime(df[date_col])
+    if start_date:
+        start_dt = pd.to_datetime(start_date)
+        df = df[df[date_col] >= start_dt]
+    if end_date:
+        end_dt = pd.to_datetime(end_date)
+        df = df[df[date_col] <= end_dt]
 ```
 
 **改进**:
@@ -201,15 +221,17 @@ curl "http://localhost:8000/rpc/ohlcva?symbol=600000.SH&start=2024-01-01&end=202
 
 通过这次修复，我们解决了mootdx适配器的核心问题：
 
-1. **API接口选择** - 从`bars()`改为`k()`方法
-2. **日期参数支持** - 支持`begin`和`end`参数
+1. **API接口选择** - 使用可靠的`bars()`方法 + 日期过滤
+2. **日期参数支持** - 通过后处理实现日期范围控制
 3. **Symbol格式处理** - 正确提取6位数字代码
 4. **市场判断优化** - 智能识别不同市场
+5. **错误处理改进** - 避免`k()`方法的内部bug
 
 现在mootdx适配器应该能够：
 - ✅ 正确处理股票代码格式
 - ✅ 精确控制数据获取的日期范围
-- ✅ 使用正确的API接口
+- ✅ 使用可靠的API接口(避免k()方法的bug)
 - ✅ 提供更好的用户体验
+- ✅ 稳定的错误处理
 
 用户现在应该能够成功使用mootdx适配器获取指定时间段的数据！

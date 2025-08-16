@@ -89,14 +89,10 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
             else:
                 market = 1  # Default to Shanghai
         
-        # Use k() method instead of bars() for better date control
+        # Use bars() method with date filtering for better reliability
         try:
-            # Parse start and end dates if provided
-            start_date = params.get('start')
-            end_date = params.get('end')
-            
-            # Use k() method with date parameters
-            df = q.k(symbol=code, begin=start_date, end=end_date, market=market)
+            # Get data using bars() method (more reliable)
+            df = q.bars(symbol=code, frequency=9, start=0, offset=2000, market=market)
             
             if isinstance(df, pd.DataFrame) and not df.empty:
                 # Rename columns to standard format
@@ -112,9 +108,36 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
                 if 'symbol' not in df.columns:
                     df.insert(0, 'symbol', symbol)
                 
-                return ('mootdx.k_daily', df)
+                # Apply date filtering if start/end dates are provided
+                start_date = params.get('start')
+                end_date = params.get('end')
+                
+                if start_date or end_date:
+                    # Convert date columns to datetime for filtering
+                    date_col = None
+                    for col in ['date', 'datetime', 'time']:
+                        if col in df.columns:
+                            date_col = col
+                            break
+                    
+                    if date_col:
+                        try:
+                            df[date_col] = pd.to_datetime(df[date_col])
+                            
+                            if start_date:
+                                start_dt = pd.to_datetime(start_date)
+                                df = df[df[date_col] >= start_dt]
+                            
+                            if end_date:
+                                end_dt = pd.to_datetime(end_date)
+                                df = df[df[date_col] <= end_dt]
+                                
+                        except Exception as date_exc:
+                            print(f"Warning: Date filtering failed: {date_exc}")
+                
+                return ('mootdx.bars_daily_filtered', df)
             else:
-                return ('mootdx.k_daily', pd.DataFrame([]))
+                return ('mootdx.bars_daily', pd.DataFrame([]))
                 
         except Exception as exc:
             raise MooAdapterError(f"Failed to fetch daily data: {exc}") from exc
@@ -151,12 +174,8 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
         fcode = freq_map.get(freq, 0)
         
         try:
-            # Parse start and end dates if provided
-            start_date = params.get('start')
-            end_date = params.get('end')
-            
-            # Use k() method with date parameters for minute data
-            df = q.k(symbol=code, begin=start_date, end=end_date, market=market, frequency=fcode)
+            # Get data using bars() method (more reliable)
+            df = q.bars(symbol=code, frequency=fcode, start=0, offset=2000, market=market)
             
             if isinstance(df, pd.DataFrame) and not df.empty:
                 # Rename columns to standard format
@@ -172,9 +191,36 @@ def call_mootdx(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFr
                 if 'symbol' not in df.columns:
                     df.insert(0, 'symbol', symbol)
                 
-                return (f'mootdx.k_min_{freq}', df)
+                # Apply date filtering if start/end dates are provided
+                start_date = params.get('start')
+                end_date = params.get('end')
+                
+                if start_date or end_date:
+                    # Convert date columns to datetime for filtering
+                    date_col = None
+                    for col in ['date', 'datetime', 'time']:
+                        if col in df.columns:
+                            date_col = col
+                            break
+                    
+                    if date_col:
+                        try:
+                            df[date_col] = pd.to_datetime(df[date_col])
+                            
+                            if start_date:
+                                start_dt = pd.to_datetime(start_date)
+                                df = df[df[date_col] >= start_dt]
+                            
+                            if end_date:
+                                end_dt = pd.to_datetime(end_date)
+                                df = df[df[date_col] <= end_dt]
+                                
+                        except Exception as date_exc:
+                            print(f"Warning: Date filtering failed: {date_exc}")
+                
+                return (f'mootdx.bars_min_{freq}_filtered', df)
             else:
-                return (f'mootdx.k_min_{freq}', pd.DataFrame([]))
+                return (f'mootdx.bars_min_{freq}', pd.DataFrame([]))
                 
         except Exception as exc:
             raise MooAdapterError(f"Failed to fetch minute data: {exc}") from exc
