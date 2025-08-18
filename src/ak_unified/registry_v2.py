@@ -688,3 +688,105 @@ REGISTRY_V2["research.sentiment"] = DatasetV2(
         ProviderSpec(adapter="snowball", api_id="sentiment", param_transform=_snowball_params),
     ],
 )
+
+# Additional Snowball datasets for enhanced functionality
+REGISTRY_V2["securities.equity.cn.basic_info.snowball"] = DatasetV2(
+    dataset_id="securities.equity.cn.basic_info.snowball",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="stock_basic_info", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.volume_price_analysis.snowball"] = DatasetV2(
+    dataset_id="securities.equity.cn.volume_price_analysis.snowball",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="volume_price_analysis", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.shareholder_structure.snowball"] = DatasetV2(
+    dataset_id="securities.equity.cn.shareholder_structure.snowball",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="shareholder_structure", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.fund_flow.snowball"] = DatasetV2(
+    dataset_id="securities.equity.cn.fund_flow.snowball",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="fund_flow", param_transform=_snowball_params),
+    ],
+)
+
+# Snowball bond datasets
+REGISTRY_V2["securities.bond.cn.info.snowball"] = DatasetV2(
+    dataset_id="securities.bond.cn.info.snowball",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="bond_info", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["securities.bond.cn.convertible.snowball"] = DatasetV2(
+    dataset_id="securities.bond.cn.convertible.snowball",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="convertible_bond_info", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["securities.bond.cn.yield_curve.snowball"] = DatasetV2(
+    dataset_id="securities.bond.cn.yield_curve.snowball",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="bond_yield_curve", param_transform=_snowball_params),
+    ],
+)
+
+# Snowball index datasets
+REGISTRY_V2["market.index.cn.info.snowball"] = DatasetV2(
+    dataset_id="market.index.cn.info.snowball",
+    category="market",
+    domain="market.index.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="index_info", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["market.index.cn.constituents.snowball"] = DatasetV2(
+    dataset_id="market.index.cn.constituents.snowball",
+    category="market",
+    domain="market.index.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="index_constituents", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["market.index.cn.sector_weight.snowball"] = DatasetV2(
+    dataset_id="market.index.cn.sector_weight.snowball",
+    category="market",
+    domain="market.index.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="index_sector_weight", param_transform=_snowball_params),
+    ],
+)
+
+REGISTRY_V2["market.index.cn.industry_weight.snowball"] = DatasetV2(
+    dataset_id="market.index.cn.industry_weight.snowball",
+    category="market",
+    domain="market.index.cn",
+    providers=[
+        ProviderSpec(adapter="snowball", api_id="index_industry_weight", param_transform=_snowball_params),
+    ],
+)
