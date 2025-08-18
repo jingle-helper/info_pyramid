@@ -211,24 +211,7 @@ def _adata_params(p: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _easytrader_params(p: Dict[str, Any]) -> Dict[str, Any]:
-    """Transform parameters for easytrader adapter.
-    
-    easytrader expects:
-    - username, password, exe_path, comm_password for login
-    - start_date, end_date for trading history
-    - symbols list for market data
-    """
-    return {
-        "username": p.get("username"),
-        "password": p.get("password"),
-        "exe_path": p.get("exe_path"),
-        "comm_password": p.get("comm_password"),
-        "start_date": p.get("start_date") or p.get("start"),
-        "end_date": p.get("end_date") or p.get("end"),
-        "symbols": p.get("symbols"),
-        "broker": p.get("broker", "universal"),
-    }
+
 
 
 def _qmt_params(p: Dict[str, Any]) -> Dict[str, Any]:
@@ -338,7 +321,7 @@ REGISTRY_V2["securities.equity.cn.quote"] = DatasetV2(
         ProviderSpec(adapter="adata", api_id="get_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="qmt", api_id="quote", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
-        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="yfinance", api_id="Ticker.fast_info", param_transform=lambda p: {"symbol": (p.get("symbols") or [None])[0]}),
     ],
 )
@@ -507,7 +490,7 @@ REGISTRY_V2["securities.equity.us.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
-        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
@@ -523,7 +506,7 @@ REGISTRY_V2["securities.equity.us.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_us_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
-        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
@@ -538,7 +521,7 @@ REGISTRY_V2["securities.equity.hk.ohlcv_daily"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
-        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_DAILY", param_transform=_alphavantage_params),
@@ -554,7 +537,7 @@ REGISTRY_V2["securities.equity.hk.ohlcv_min"] = DatasetV2(
         ProviderSpec(adapter="yfinance", api_id="download", param_transform=_yfinance_hk_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
         ProviderSpec(adapter="ibkr", api_id="reqHistoricalData", param_transform=_alphavantage_params),
-        ProviderSpec(adapter="easytrader", api_id="market_data", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols")}),
         ProviderSpec(adapter="snowball", api_id="stock_quote", param_transform=_snowball_params),
         ProviderSpec(adapter="alphavantage", api_id="TIME_SERIES_INTRADAY", param_transform=_alphavantage_params),
     ],
@@ -651,22 +634,87 @@ REGISTRY_V2["market.calendar.cn"] = DatasetV2(
     ],
 )
 
-# EasyTrader datasets
-REGISTRY_V2["trading.account.info"] = DatasetV2(
-    dataset_id="trading.account.info",
-    category="trading",
-    domain="trading.account",
+# EasyQuotation datasets (replacing EasyTrader)
+REGISTRY_V2["securities.equity.cn.quotes.sina"] = DatasetV2(
+    dataset_id="securities.equity.cn.quotes.sina",
+    category="securities",
+    domain="securities.equity.cn",
     providers=[
-        ProviderSpec(adapter="easytrader", api_id="account_info", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="stock_quotes", param_transform=lambda p: {"symbols": p.get("symbols", [])}),
     ],
 )
 
-REGISTRY_V2["trading.portfolio"] = DatasetV2(
-    dataset_id="trading.portfolio",
-    category="trading",
-    domain="trading.portfolio",
+REGISTRY_V2["market.overview.sina"] = DatasetV2(
+    dataset_id="market.overview.sina",
+    category="market",
+    domain="market.cn",
     providers=[
-        ProviderSpec(adapter="easytrader", api_id="portfolio", param_transform=_easytrader_params),
+        ProviderSpec(adapter="easyquotation", api_id="market_overview", param_transform=lambda p: {}),
+    ],
+)
+
+REGISTRY_V2["market.sector.sina"] = DatasetV2(
+    dataset_id="market.sector.sina",
+    category="market",
+    domain="market.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="sector_data", param_transform=lambda p: {}),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.rankings.sina"] = DatasetV2(
+    dataset_id="securities.equity.cn.rankings.sina",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="stock_rankings", param_transform=lambda p: {"rank_type": p.get("rank_type", "change_percent"), "limit": p.get("limit", 50)}),
+    ],
+)
+
+# Jisilu bond datasets
+REGISTRY_V2["securities.bond.cn.convertible.jisilu"] = DatasetV2(
+    dataset_id="securities.bond.cn.convertible.jisilu",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="convertible_bonds", param_transform=lambda p: {}),
+    ],
+)
+
+REGISTRY_V2["securities.bond.cn.info.jisilu"] = DatasetV2(
+    dataset_id="securities.bond.cn.info.jisilu",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="bond_info", param_transform=lambda p: {"bond_code": p.get("bond_code")}),
+    ],
+)
+
+REGISTRY_V2["securities.bond.cn.yield_curve.jisilu"] = DatasetV2(
+    dataset_id="securities.bond.cn.yield_curve.jisilu",
+    category="securities",
+    domain="securities.bond.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="bond_yield_curve", param_transform=lambda p: {"bond_type": p.get("bond_type", "government")}),
+    ],
+)
+
+# Tencent and Eastmoney datasets
+REGISTRY_V2["securities.equity.cn.quotes.tencent"] = DatasetV2(
+    dataset_id="securities.equity.cn.quotes.tencent",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="tencent_quotes", param_transform=lambda p: {"symbols": p.get("symbols", [])}),
+    ],
+)
+
+REGISTRY_V2["securities.equity.cn.quotes.eastmoney"] = DatasetV2(
+    dataset_id="securities.equity.cn.quotes.eastmoney",
+    category="securities",
+    domain="securities.equity.cn",
+    providers=[
+        ProviderSpec(adapter="easyquotation", api_id="eastmoney_data", param_transform=lambda p: {"symbols": p.get("symbols", [])}),
     ],
 )
 
