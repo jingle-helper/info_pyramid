@@ -631,6 +631,91 @@ REGISTRY_V2["market.calendar.cn"] = DatasetV2(
         ProviderSpec(adapter="akshare", api_id="tool_trade_date_hist_sina", vendor="sina", param_transform=lambda p: {}),
         ProviderSpec(adapter="baostock", api_id="query_trade_dates", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
         ProviderSpec(adapter="mootdx", api_id="bars", param_transform=lambda p: {"start": p.get("start"), "end": p.get("end")}),
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "SSE", "start_date": p.get("start"), "end_date": p.get("end")}),
+    ],
+)
+
+# Calendar datasets for different exchanges
+REGISTRY_V2["market.calendar.us"] = DatasetV2(
+    dataset_id="market.calendar.us",
+    category="market",
+    domain="market.us",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "NYSE", "start_date": p.get("start"), "end_date": p.get("end")}),
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "NASDAQ", "start_date": p.get("start"), "end_date": p.get("end")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.hk"] = DatasetV2(
+    dataset_id="market.calendar.hk",
+    category="market",
+    domain="market.hk",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "HKEX", "start_date": p.get("start"), "end_date": p.get("end")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.jp"] = DatasetV2(
+    dataset_id="market.calendar.jp",
+    category="market",
+    domain="market.jp",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "TSE", "start_date": p.get("start"), "end_date": p.get("end")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.uk"] = DatasetV2(
+    dataset_id="market.calendar.uk",
+    category="market",
+    domain="market.uk",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="trading_days", param_transform=lambda p: {"exchange": "LSE", "start_date": p.get("start"), "end_date": p.get("end")}),
+    ],
+)
+
+# Calendar utility datasets
+REGISTRY_V2["market.calendar.trading_hours"] = DatasetV2(
+    dataset_id="market.calendar.trading_hours",
+    category="market",
+    domain="market.calendar",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="trading_hours", param_transform=lambda p: {"exchange": p.get("exchange"), "date": p.get("date")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.holidays"] = DatasetV2(
+    dataset_id="market.calendar.holidays",
+    category="market",
+    domain="market.calendar",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="holidays", param_transform=lambda p: {"exchange": p.get("exchange"), "start_date": p.get("start_date"), "end_date": p.get("end_date")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.supported_exchanges"] = DatasetV2(
+    dataset_id="market.calendar.supported_exchanges",
+    category="market",
+    domain="market.calendar",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="supported_exchanges", param_transform=lambda p: {}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.next_trading_day"] = DatasetV2(
+    dataset_id="market.calendar.next_trading_day",
+    category="market",
+    domain="market.calendar",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="next_trading_day", param_transform=lambda p: {"exchange": p.get("exchange"), "date": p.get("date")}),
+    ],
+)
+
+REGISTRY_V2["market.calendar.previous_trading_day"] = DatasetV2(
+    dataset_id="market.calendar.previous_trading_day",
+    category="market",
+    domain="market.calendar",
+    providers=[
+        ProviderSpec(adapter="calendar", api_id="previous_trading_day", param_transform=lambda p: {"exchange": p.get("exchange"), "date": p.get("date")}),
     ],
 )
 
