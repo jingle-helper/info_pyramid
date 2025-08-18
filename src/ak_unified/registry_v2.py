@@ -880,6 +880,115 @@ REGISTRY_V2["research.earnings.forecast.us"] = DatasetV2(
     ],
 )
 
+# Financial indicators (no aggregation; each provider is a concrete third-party)
+REGISTRY_V2["research.financial.indicators.cn"] = DatasetV2(
+    dataset_id="research.financial.indicators.cn",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_analysis_indicator", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+REGISTRY_V2["research.financial.indicators.us"] = DatasetV2(
+    dataset_id="research.financial.indicators.us",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_us_analysis_indicator_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+REGISTRY_V2["research.financial.indicators.hk"] = DatasetV2(
+    dataset_id="research.financial.indicators.hk",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_hk_analysis_indicator_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+# Financial statements (split to concrete function endpoints)
+# CN - balance sheet
+REGISTRY_V2["research.financial.statements.cn.balance_sheet.report"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.balance_sheet.report",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_balance_sheet_by_report_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+REGISTRY_V2["research.financial.statements.cn.balance_sheet.yearly"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.balance_sheet.yearly",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_balance_sheet_by_yearly_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+# CN - income statement
+REGISTRY_V2["research.financial.statements.cn.income_statement.report"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.income_statement.report",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_profit_sheet_by_report_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+REGISTRY_V2["research.financial.statements.cn.income_statement.yearly"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.income_statement.yearly",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_profit_sheet_by_yearly_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+# CN - cash flow
+REGISTRY_V2["research.financial.statements.cn.cash_flow.report"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.cash_flow.report",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_cash_flow_sheet_by_report_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+REGISTRY_V2["research.financial.statements.cn.cash_flow.yearly"] = DatasetV2(
+    dataset_id="research.financial.statements.cn.cash_flow.yearly",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_cash_flow_sheet_by_yearly_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+# US statements via Alpha Vantage
+REGISTRY_V2["research.financial.statements.us.balance_sheet"] = DatasetV2(
+    dataset_id="research.financial.statements.us.balance_sheet",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="alphavantage", api_id="BALANCE_SHEET", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+REGISTRY_V2["research.financial.statements.us.income_statement"] = DatasetV2(
+    dataset_id="research.financial.statements.us.income_statement",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="alphavantage", api_id="INCOME_STATEMENT", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+REGISTRY_V2["research.financial.statements.us.cash_flow"] = DatasetV2(
+    dataset_id="research.financial.statements.us.cash_flow",
+    category="research",
+    domain="research.financial",
+    providers=[
+        ProviderSpec(adapter="alphavantage", api_id="CASH_FLOW", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
 REGISTRY_V2["research.sentiment"] = DatasetV2(
     dataset_id="research.sentiment",
     category="research",
