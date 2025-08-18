@@ -72,7 +72,8 @@ def _handle_call(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataF
             df.insert(0, 'symbol', symbol)
             return f'baostock.query_history_k_data_plus_{freq}', df
 
-        if dataset_id == 'market.calendar.baostock':
+        # Support both legacy v1 id and v2 routed dataset ids for calendar via baostock
+        if dataset_id == 'market.calendar.baostock' or dataset_id.endswith('.calendar') or dataset_id.endswith('market.calendar.cn'):
             start = (params.get('start') or '1990-12-19')
             end = (params.get('end') or '2099-12-31')
             rs = bs.query_trade_dates(start_date=start, end_date=end)
