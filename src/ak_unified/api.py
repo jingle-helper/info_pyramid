@@ -44,8 +44,6 @@ from .schemas.easytrader import (
     EasyTraderRiskMetricsResponse
 )
 from .adapters.qmt_adapter import test_qmt_import  # type: ignore
-from .adapters.earnings_calendar_adapter import call_earnings_calendar
-from .adapters.financial_data_adapter import call_financial_data
 from .adapters.fund_portfolio_adapter import call_fund_portfolio
 from .adapters.snowball_adapter import call_snowball
 from .adapters.easytrader_adapter import call_easytrader
@@ -1039,16 +1037,12 @@ async def get_earnings_calendar(
 ) -> EarningsCalendarResponse:
     """Get earnings calendar for specified market and date range."""
     try:
-        # Get earnings calendar data
-        function_name, df = await call_earnings_calendar(
-            'earnings_calendar',
-            {
-                'market': market,
-                'start_date': start_date,
-                'end_date': end_date,
-                'symbols': symbols
-            }
+        dsid = (
+            'research.earnings.calendar.cn' if market == 'cn' else
+            'research.earnings.calendar.us' if market == 'us' else
+            'research.earnings.calendar.hk'
         )
+        _, df = fetch_data_v2(dsid, params={'start_date': start_date, 'end_date': end_date, 'symbols': symbols})
         
         if df.empty:
             return EarningsCalendarResponse(
@@ -1057,7 +1051,7 @@ async def get_earnings_calendar(
                 total_count=0,
                 market=market,
                 period=f"{start_date or 'all'} to {end_date or 'all'}",
-                source="earnings_calendar_adapter"
+                source="v2"
             )
         
         # Convert DataFrame to EarningsEvent objects
@@ -1074,7 +1068,7 @@ async def get_earnings_calendar(
                 eps_actual=row.get('eps_actual'),
                 revenue_estimate=row.get('revenue_estimate'),
                 revenue_actual=row.get('revenue_actual'),
-                source=row.get('source', 'earnings_calendar_adapter'),
+                source='v2',
                 market=market
             )
             events.append(event)
@@ -1085,7 +1079,7 @@ async def get_earnings_calendar(
             total_count=len(events),
             market=market,
             period=f"{start_date or 'all'} to {end_date or 'all'}",
-            source="earnings_calendar_adapter"
+            source="v2"
         )
         
     except Exception as e:
@@ -1096,7 +1090,7 @@ async def get_earnings_calendar(
             total_count=0,
             market=market,
             period=f"{start_date or 'all'} to {end_date or 'all'}",
-            source="earnings_calendar_adapter"
+            source="v2"
         )
 
 
@@ -1108,15 +1102,11 @@ async def get_earnings_forecast(
 ) -> EarningsForecastResponse:
     """Get earnings forecast for a specific symbol."""
     try:
-        # Get earnings forecast data
-        function_name, df = await call_earnings_calendar(
-            'earnings_forecast',
-            {
-                'symbol': symbol,
-                'market': market,
-                'period': period
-            }
+        dsid = (
+            'research.earnings.forecast.cn' if market == 'cn' else
+            'research.earnings.forecast.us'
         )
+        _, df = fetch_data_v2(dsid, params={'symbol': symbol, 'period': period})
         
         if df.empty:
             return EarningsForecastResponse(
@@ -1125,7 +1115,7 @@ async def get_earnings_forecast(
                 forecasts=[],
                 total_count=0,
                 market=market,
-                source="earnings_calendar_adapter"
+                source="v2"
             )
         
         # Convert DataFrame to EarningsForecast objects
@@ -1149,7 +1139,7 @@ async def get_earnings_forecast(
             forecasts=forecasts,
             total_count=len(forecasts),
             market=market,
-            source="earnings_calendar_adapter"
+            source="v2"
         )
         
     except Exception as e:
@@ -1160,7 +1150,7 @@ async def get_earnings_forecast(
             forecasts=[],
             total_count=0,
             market=market,
-            source="earnings_calendar_adapter"
+            source="v2"
         )
 
 
@@ -1171,14 +1161,11 @@ async def get_earnings_dates(
 ) -> EarningsCalendarResponse:
     """Get earnings dates for a specific symbol."""
     try:
-        # Get earnings dates data
-        function_name, df = await call_earnings_calendar(
-            'earnings_dates',
-            {
-                'symbol': symbol,
-                'market': market
-            }
+        dsid = (
+            'research.earnings.dates.cn' if market in ('cn', 'hk') else
+            'research.earnings.calendar.us'
         )
+        _, df = fetch_data_v2(dsid, params={'symbol': symbol})
         
         if df.empty:
             return EarningsCalendarResponse(
@@ -1187,7 +1174,7 @@ async def get_earnings_dates(
                 total_count=0,
                 market=market,
                 period="all",
-                source="earnings_calendar_adapter"
+                source="v2"
             )
         
         # Convert DataFrame to EarningsEvent objects
@@ -1200,7 +1187,7 @@ async def get_earnings_dates(
                 report_type=row.get('report_type', ''),
                 scheduled_date=pd.to_datetime(row.get('report_date')) if row.get('report_date') else None,
                 actual_date=pd.to_datetime(row.get('report_date')) if row.get('report_date') else None,
-                source=row.get('source', 'earnings_calendar_adapter'),
+                source='v2',
                 market=market
             )
             events.append(event)
@@ -1211,7 +1198,7 @@ async def get_earnings_dates(
             total_count=len(events),
             market=market,
             period="all",
-            source="earnings_calendar_adapter"
+            source="v2"
         )
         
     except Exception as e:
@@ -1222,7 +1209,7 @@ async def get_earnings_dates(
             total_count=0,
             market=market,
             period="all",
-            source="earnings_calendar_adapter"
+            source="v2"
         )
 
 
@@ -1239,16 +1226,12 @@ async def get_financial_indicators(
 ) -> FinancialIndicatorsResponse:
     """Get financial indicators for a specific symbol."""
     try:
-        # Get financial indicators data
-        function_name, df = await call_financial_data(
-            'financial_indicators',
-            {
-                'symbol': symbol,
-                'market': market,
-                'period': period,
-                'indicators': indicators
-            }
+        dsid = (
+            'research.financial.indicators.cn' if market == 'cn' else
+            'research.financial.indicators.us' if market == 'us' else
+            'research.financial.indicators.hk'
         )
+        _, df = fetch_data_v2(dsid, params={'symbol': symbol, 'period': period, 'indicators': indicators})
         
         if df.empty:
             return FinancialIndicatorsResponse(
@@ -1275,7 +1258,7 @@ async def get_financial_indicators(
                         indicator_value=float(row[col]) if pd.notna(row[col]) else 0.0,
                         report_date=pd.to_datetime(row.get('report_date')) if row.get('report_date') else datetime.now(),
                         period=period,
-                        source="financial_data_adapter",
+                        source="v2",
                         market=market
                     )
                     indicator_list.append(indicator)
@@ -1287,7 +1270,7 @@ async def get_financial_indicators(
             total_count=len(indicator_list),
             period=period,
             market=market,
-            source="financial_data_adapter"
+            source="v2"
         )
         
     except Exception as e:
@@ -1299,7 +1282,7 @@ async def get_financial_indicators(
             total_count=0,
             period=period,
             market=market,
-            source="financial_data_adapter"
+            source="v2"
         )
 
 
@@ -1312,16 +1295,22 @@ async def get_financial_statements(
 ) -> FinancialStatementResponse:
     """Get financial statements for a specific symbol."""
     try:
-        # Get financial statements data
-        function_name, df = await call_financial_data(
-            'financial_statements',
-            {
-                'symbol': symbol,
-                'statement_type': statement_type,
-                'market': market,
-                'period': period
-            }
-        )
+        if market == 'cn':
+            dsid = (
+                'research.financial.statements.cn.balance_sheet.yearly' if statement_type == 'balance_sheet' and period == 'annual' else
+                'research.financial.statements.cn.balance_sheet.report' if statement_type == 'balance_sheet' else
+                'research.financial.statements.cn.income_statement.yearly' if statement_type == 'income_statement' and period == 'annual' else
+                'research.financial.statements.cn.income_statement.report' if statement_type == 'income_statement' else
+                'research.financial.statements.cn.cash_flow.yearly' if statement_type == 'cash_flow' and period == 'annual' else
+                'research.financial.statements.cn.cash_flow.report'
+            )
+        else:
+            dsid = (
+                'research.financial.statements.us.balance_sheet' if statement_type == 'balance_sheet' else
+                'research.financial.statements.us.income_statement' if statement_type == 'income_statement' else
+                'research.financial.statements.us.cash_flow'
+            )
+        _, df = fetch_data_v2(dsid, params={'symbol': symbol, 'period': period})
         
         if df.empty:
             return FinancialStatementResponse(
@@ -1346,7 +1335,7 @@ async def get_financial_statements(
             period=period,
             report_date=pd.to_datetime(statement_data.get('report_date')) if statement_data.get('report_date') else datetime.now(),
             data=statement_data,
-            source="financial_data_adapter",
+            source="v2",
             market=market
         )
         
@@ -1369,7 +1358,7 @@ async def get_financial_statements(
             statement=None,
             period=period,
             market=market,
-            source="financial_data_adapter"
+            source="v2"
         )
 
 
