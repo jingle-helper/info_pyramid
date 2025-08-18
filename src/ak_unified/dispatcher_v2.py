@@ -81,9 +81,14 @@ def _dispatch_call(provider: ProviderSpec, dataset_id: str, params: Dict[str, An
         # Not yet wired; return empty for now
         return api_id, pd.DataFrame([])
 
-    if adapter == 'calendar':
-        from .adapters.calendar_adapter import call_calendar
-        fn_used, df = _sync_await(call_calendar(api_id, p))
+    if adapter == 'exchange_calendars':
+        from .adapters.exchange_calendars_adapter import call_exchange_calendars
+        fn_used, df = _sync_await(call_exchange_calendars(api_id, p))
+        return api_id, df if isinstance(df, pd.DataFrame) else pd.DataFrame([])
+
+    if adapter == 'pandas_market_calendars':
+        from .adapters.pandas_market_calendars_adapter import call_pandas_market_calendars
+        fn_used, df = _sync_await(call_pandas_market_calendars(api_id, p))
         return api_id, df if isinstance(df, pd.DataFrame) else pd.DataFrame([])
 
     raise RuntimeError(f"Unknown adapter: {adapter}")
