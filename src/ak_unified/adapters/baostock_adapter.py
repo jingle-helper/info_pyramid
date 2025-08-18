@@ -45,10 +45,10 @@ def _iter_resultset(rs):
 
 def _handle_call(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFrame]:
     def handle(bs):
-        if dataset_id.endswith('ohlcv_daily'):
+        if dataset_id.endswith('ohlcv_daily') or dataset_id.endswith('ohlcva_daily'):
             symbol = params.get('symbol')
-            start = (params.get('start') or '19700101').replace('-', '')
-            end = (params.get('end') or '22220101').replace('-', '')
+            start = params.get('start') or '1970-01-01'
+            end = params.get('end') or '2222-01-01'
             rs = bs.query_history_k_data_plus(symbol, "date,open,high,low,close,volume,amount", start_date=start, end_date=end, frequency="d", adjustflag="3")
             rows, fields = _iter_resultset(rs)
             df = pd.DataFrame(rows, columns=fields)
@@ -59,8 +59,8 @@ def _handle_call(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataF
 
         if dataset_id.endswith('ohlcv_min'):
             symbol = params.get('symbol')
-            start = (params.get('start') or '19700101').replace('-', '')
-            end = (params.get('end') or '22220101').replace('-', '')
+            start = params.get('start') or '1970-01-01'
+            end = params.get('end') or '2222-01-01'
             freq = str(params.get('freq') or '5')  # support 5/15/30/60
             if freq not in {'5','15','30','60'}:
                 freq = '5'
@@ -72,7 +72,8 @@ def _handle_call(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataF
             df.insert(0, 'symbol', symbol)
             return f'baostock.query_history_k_data_plus_{freq}', df
 
-        if dataset_id == 'market.calendar.baostock':
+        # Support both legacy v1 id and v2 routed dataset ids for calendar via baostock
+        if dataset_id == 'market.calendar.baostock' or dataset_id.endswith('.calendar') or dataset_id.endswith('market.calendar.cn'):
             start = (params.get('start') or '1990-12-19')
             end = (params.get('end') or '2099-12-31')
             rs = bs.query_trade_dates(start_date=start, end_date=end)

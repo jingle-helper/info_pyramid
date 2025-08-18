@@ -29,21 +29,62 @@ def _to_df(obj: Any) -> pd.DataFrame:
 
 def call_adata(dataset_id: str, params: Dict[str, Any]) -> Tuple[str, pd.DataFrame]:
     ad = _import_adata()
-    # Assume adata has api: get_history(symbol, start, end), get_quotes(symbols)
-    if '.ohlcv_daily' in dataset_id:
+    # Try to find available methods for historical data
+    if '.ohlcv_daily' in dataset_id or '.ohlcva_daily' in dataset_id:
         symbol = params.get('symbol')
         start = params.get('start')
         end = params.get('end')
-        try:
-            df = ad.get_history(symbol, start, end)
-        except Exception as exc:
-            raise ADataAdapterError(str(exc)) from exc
+        
+        # Try different possible method names
+        methods_to_try = ['get_history', 'history', 'get_data', 'data', 'get_ohlcv', 'ohlcv']
+        df = pd.DataFrame()
+        
+        for method_name in methods_to_try:
+            if hasattr(ad, method_name):
+                try:
+                    method = getattr(ad, method_name)
+                    if method_name in ['get_history', 'history', 'get_data', 'data']:
+                        df = method(symbol, start=start, end=end)
+                    elif method_name in ['get_ohlcv', 'ohlcv']:
+                        df = method(symbol)
+                    else:
+                        df = method(symbol)
+                    break
+                except Exception:
+                    continue
+        
+        if df is None or df.empty:
+            # Try calling without parameters
+            for method_name in methods_to_try:
+                if hasattr(ad, method_name):
+                    try:
+                        method = getattr(ad, method_name)
+                        df = method(symbol)
+                        break
+                    except Exception:
+                        continue
+        
         df = _to_df(df)
         if not df.empty:
-            df = df.rename(columns={'date': 'date', 'open': 'open', 'high': 'high', 'low': 'low', 'close': 'close', 'volume': 'volume', 'amount': 'amount'})
+            # Try to rename columns if they exist
+            column_mapping = {
+                'date': 'date', 'time': 'date', 'datetime': 'date',
+                'open': 'open', '开盘': 'open',
+                'high': 'high', '最高': 'high',
+                'low': 'low', '最低': 'low',
+                'close': 'close', '收盘': 'close',
+                'volume': 'volume', '成交量': 'volume', 'vol': 'volume',
+                'amount': 'amount', '成交额': 'amount'
+            }
+            
+            for old_col, new_col in column_mapping.items():
+                if old_col in df.columns and new_col not in df.columns:
+                    df = df.rename(columns={old_col: new_col})
+            
             if 'symbol' not in df.columns:
                 df.insert(0, 'symbol', symbol)
-        return ('adata.get_history', df)
+        
+        return ('adata.historical_data', df)
     if '.quote' in dataset_id:
         symbols: Optional[List[str]] = params.get('symbols')
         try:
