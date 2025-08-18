@@ -822,6 +822,64 @@ REGISTRY_V2["research.financial_data"] = DatasetV2(
     ],
 )
 
+# Earnings datasets (split by concrete providers, no virtual aggregation)
+REGISTRY_V2["research.earnings.calendar.cn"] = DatasetV2(
+    dataset_id="research.earnings.calendar.cn",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        # Baidu report time as broad CN calendar
+        ProviderSpec(adapter="akshare", api_id="news_report_time_baidu", vendor="baidu", param_transform=lambda p: {"market": "cn"}),
+    ],
+)
+
+REGISTRY_V2["research.earnings.calendar.hk"] = DatasetV2(
+    dataset_id="research.earnings.calendar.hk",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_hk_report_em", vendor="eastmoney", param_transform=lambda p: {}),
+    ],
+)
+
+REGISTRY_V2["research.earnings.calendar.us"] = DatasetV2(
+    dataset_id="research.earnings.calendar.us",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_us_report_em", vendor="eastmoney", param_transform=lambda p: {}),
+        ProviderSpec(adapter="alphavantage", api_id="EARNINGS_CALENDAR", param_transform=lambda p: {"symbol": (p.get("symbols") or [None])[0], "horizon": p.get("horizon", "3month")}, priority=3),
+    ],
+)
+
+REGISTRY_V2["research.earnings.dates.cn"] = DatasetV2(
+    dataset_id="research.earnings.dates.cn",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_financial_abstract", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+        ProviderSpec(adapter="akshare", api_id="stock_notice_report", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}, priority=3),
+    ],
+)
+
+REGISTRY_V2["research.earnings.forecast.cn"] = DatasetV2(
+    dataset_id="research.earnings.forecast.cn",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        ProviderSpec(adapter="akshare", api_id="stock_profit_forecast_em", vendor="eastmoney", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
+REGISTRY_V2["research.earnings.forecast.us"] = DatasetV2(
+    dataset_id="research.earnings.forecast.us",
+    category="research",
+    domain="research.earnings",
+    providers=[
+        ProviderSpec(adapter="alphavantage", api_id="EARNINGS", param_transform=lambda p: {"symbol": p.get("symbol")}),
+    ],
+)
+
 REGISTRY_V2["research.sentiment"] = DatasetV2(
     dataset_id="research.sentiment",
     category="research",

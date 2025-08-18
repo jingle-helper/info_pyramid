@@ -40,7 +40,9 @@ def _dispatch_call(provider: ProviderSpec, dataset_id: str, params: Dict[str, An
 
     if adapter == 'yfinance':
         from .adapters.yfinance_adapter import call_yfinance
-        fn_used, df = call_yfinance(dataset_id, p)
+        # Pass api_id for routing inside adapter without virtual aggregation
+        p2 = dict(p); p2['_api_id'] = api_id
+        fn_used, df = call_yfinance(dataset_id, p2)
         return api_id, df if isinstance(df, pd.DataFrame) else pd.DataFrame([])
 
     if adapter == 'ibkr':
