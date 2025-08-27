@@ -27,6 +27,12 @@ from .schemas.financial import (
     FinancialIndicator, FinancialDataRequest, FinancialIndicatorsResponse, 
     FinancialStatementResponse, FinancialRatioResponse
 )
+from .schemas.core import (
+    MacroIndicator, MarketQuote, OHLCVBar, IndexConstituent, CapitalFlow,
+    TradingCalendar, CorporateAction, FundNAV, BondQuote, BondCurve,
+    FuturesContract, FuturesQuote, OptionContract, OptionQuote
+)
+from .schemas.validators import validate_dataframe_to_schema
 from .schemas.fund import (
     FundPortfolioRequest, FundHoldingsChangeRequest, FundTopHoldingsRequest,
     FundPortfolioResponse, FundHoldingsChangeResponse, FundTopHoldingsResponse
@@ -284,8 +290,9 @@ async def rpc_ohlcv(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, OHLCVBar)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -311,8 +318,9 @@ async def rpc_ohlcva(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema (OHLCVA includes amount field)
+        validated_records = validate_dataframe_to_schema(df, OHLCVBar)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -638,7 +646,9 @@ async def rpc_quote(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return {"error": str(e)}
-        records = apply_and_validate(dsid, df.to_dict(orient='records'))
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, MarketQuote)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2525,8 +2535,9 @@ async def rpc_fund_nav(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, FundNAV)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2597,8 +2608,9 @@ async def rpc_industry_constituents(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, IndexConstituent)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2700,8 +2712,9 @@ async def rpc_macro_cpi(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, MacroIndicator)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2774,8 +2787,9 @@ async def rpc_market_calendar(
             fn_used, df = fetch_data_v2(dsid, params=params, adapter=adapter, allow_fallback=allow_fallback)
         except ValueError as e:
             return JSONResponse(content={"error": str(e)}, status_code=400)
-        records = df.to_dict(orient="records")
-        records = apply_and_validate(dsid, records)
+        # Validate and transform data to core schema
+        validated_records = validate_dataframe_to_schema(df, TradingCalendar)
+        records = [record.model_dump(mode="json") for record in validated_records]
         env = _api_make_envelope(dsid, params, records)
         env.ak_function = fn_used
         env.data_source = ",".join(adapter or []) if adapter else "v2"
@@ -2804,3 +2818,170 @@ def _api_make_envelope(dataset_id: str, params: Dict[str, Any], records: List[Di
         data=records,
         pagination=Pagination(offset=0, limit=len(records), total=len(records)),
     )
+
+
+# New API endpoints for testing core schema validation
+@app.get("/rpc/test/core_schema")
+async def test_core_schema_validation():
+    """Test endpoint to demonstrate core schema validation functionality."""
+    from .schemas.validators import DataValidator
+    
+    # Create sample data for testing
+    sample_ohlcv_data = {
+        'symbol': ['000001.SZ', '000002.SZ'],
+        'date': ['2024-01-01', '2024-01-02'],
+        'open': [10.0, 10.5],
+        'high': [10.8, 11.0],
+        'low': [9.8, 10.2],
+        'close': [10.5, 10.8],
+        'volume': [1000000, 1200000],
+        'amount': [10500000, 12600000]
+    }
+    
+    sample_market_quote_data = {
+        'symbol': ['000001.SZ'],
+        'datetime': ['2024-01-01 15:00:00'],
+        'last': [10.5],
+        'open': [10.0],
+        'high': [10.8],
+        'low': [9.8],
+        'volume': [1000000]
+    }
+    
+    sample_macro_data = {
+        'indicator_id': ['CPI'],
+        'indicator_name': ['Consumer Price Index'],
+        'date': ['2024-01'],
+        'value': [102.5],
+        'period': ['M']
+    }
+    
+    # Test validation
+    validator = DataValidator()
+    
+    try:
+        # Test OHLCV validation
+        ohlcv_records = []
+        for i in range(len(sample_ohlcv_data['symbol'])):
+            data = {k: v[i] for k, v in sample_ohlcv_data.items()}
+            validated = validator.validate_ohlcv_bar(data)
+            ohlcv_records.append(validated.model_dump(mode="json"))
+        
+        # Test Market Quote validation
+        quote_records = []
+        for i in range(len(sample_market_quote_data['symbol'])):
+            data = {k: v[i] for k, v in sample_market_quote_data.items()}
+            validated = validator.validate_market_quote(data)
+            quote_records.append(validated.model_dump(mode="json"))
+        
+        # Test Macro Indicator validation
+        macro_records = []
+        for i in range(len(sample_macro_data['indicator_id'])):
+            data = {k: v[i] for k, v in sample_macro_data.items()}
+            validated = validator.validate_macro_indicator(data)
+            macro_records.append(validated.model_dump(mode="json"))
+        
+        return {
+            "message": "Core schema validation test completed successfully",
+            "test_results": {
+                "ohlcv_validation": {
+                    "count": len(ohlcv_records),
+                    "sample": ohlcv_records[0] if ohlcv_records else None
+                },
+                "market_quote_validation": {
+                    "count": len(quote_records),
+                    "sample": quote_records[0] if quote_records else None
+                },
+                "macro_indicator_validation": {
+                    "count": len(macro_records),
+                    "sample": macro_records[0] if macro_records else None
+                }
+            },
+            "schema_classes_available": [
+                "MacroIndicator", "MarketQuote", "OHLCVBar", "IndexConstituent",
+                "CapitalFlow", "TradingCalendar", "CorporateAction", "FundNAV",
+                "BondQuote", "BondCurve", "FuturesContract", "FuturesQuote",
+                "OptionContract", "OptionQuote"
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "error": f"Validation test failed: {str(e)}",
+            "message": "Core schema validation encountered an error"
+        }
+
+
+@app.get("/rpc/schema/core")
+async def get_core_schema_info():
+    """Get information about available core schemas and their structure."""
+    from .schemas.core import (
+        MacroIndicator, MarketQuote, OHLCVBar, IndexConstituent, CapitalFlow,
+        TradingCalendar, CorporateAction, FundNAV, BondQuote, BondCurve,
+        FuturesContract, FuturesQuote, OptionContract, OptionQuote
+    )
+    
+    schemas = {
+        "MacroIndicator": {
+            "description": "Macroeconomic indicators like CPI, PPI, GDP",
+            "fields": list(MacroIndicator.__annotations__.keys()),
+            "required_fields": ["region", "indicator_id", "indicator_name", "date", "value"]
+        },
+        "MarketQuote": {
+            "description": "Real-time market quotes for securities",
+            "fields": list(MarketQuote.__annotations__.keys()),
+            "required_fields": ["symbol", "datetime", "last"]
+        },
+        "OHLCVBar": {
+            "description": "OHLCV (Open, High, Low, Close, Volume) bar data",
+            "fields": list(OHLCVBar.__annotations__.keys()),
+            "required_fields": ["symbol", "date", "open", "high", "low", "close", "volume"]
+        },
+        "IndexConstituent": {
+            "description": "Index constituent information",
+            "fields": list(IndexConstituent.__annotations__.keys()),
+            "required_fields": ["index_symbol", "symbol"]
+        },
+        "CapitalFlow": {
+            "description": "Capital flow data for securities",
+            "fields": list(CapitalFlow.__annotations__.keys()),
+            "required_fields": ["symbol", "date"]
+        },
+        "TradingCalendar": {
+            "description": "Trading calendar information",
+            "fields": list(TradingCalendar.__annotations__.keys()),
+            "required_fields": ["date", "is_trading_day", "market"]
+        },
+        "CorporateAction": {
+            "description": "Corporate actions like dividends, splits",
+            "fields": list(CorporateAction.__annotations__.keys()),
+            "required_fields": ["symbol", "action_type", "ex_date"]
+        },
+        "FundNAV": {
+            "description": "Fund Net Asset Value data",
+            "fields": list(FundNAV.__annotations__.keys()),
+            "required_fields": ["fund_code", "nav_date", "nav"]
+        },
+        "BondQuote": {
+            "description": "Bond quote information",
+            "fields": list(BondQuote.__annotations__.keys()),
+            "required_fields": ["symbol", "date"]
+        },
+        "FuturesQuote": {
+            "description": "Futures contract quote data",
+            "fields": list(FuturesQuote.__annotations__.keys()),
+            "required_fields": ["contract", "date", "open", "high", "low", "close", "volume"]
+        },
+        "OptionQuote": {
+            "description": "Option contract quote data with Greeks",
+            "fields": list(OptionQuote.__annotations__.keys()),
+            "required_fields": ["contract", "datetime", "last"]
+        }
+    }
+    
+    return {
+        "message": "Core schema information",
+        "total_schemas": len(schemas),
+        "schemas": schemas,
+        "usage": "These schemas are used to validate and standardize data from various adapters"
+    }
