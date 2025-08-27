@@ -27,6 +27,11 @@ from .schemas.financial import (
     FinancialIndicator, FinancialDataRequest, FinancialIndicatorsResponse, 
     FinancialStatementResponse, FinancialRatioResponse
 )
+from .schemas.core import (
+    MacroIndicator, MarketQuote, OHLCVBar, IndexConstituent, CapitalFlow,
+    TradingCalendar, CorporateAction, FundNAV, BondQuote, BondCurve,
+    FuturesContract, FuturesQuote, OptionContract, OptionQuote
+)
 from .schemas.fund import (
     FundPortfolioRequest, FundHoldingsChangeRequest, FundTopHoldingsRequest,
     FundPortfolioResponse, FundHoldingsChangeResponse, FundTopHoldingsResponse
